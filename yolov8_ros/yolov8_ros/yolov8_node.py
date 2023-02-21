@@ -74,6 +74,7 @@ class Yolov8Node(Node):
 
             # create detections msg
             detections_msg = Detection2DArray()
+            detections_msg.header = msg.header
 
             for b in results.boxes:
 
