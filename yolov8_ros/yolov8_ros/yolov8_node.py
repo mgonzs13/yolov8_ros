@@ -44,7 +44,7 @@ class Yolov8Node(Node):
 
         # topcis
         self._pub = self.create_publisher(Detection2DArray, "detections", 10)
-        self._dbg_pub = self.create_publisher(Image, "image_dbg", 10)
+        self._dbg_pub = self.create_publisher(Image, "dbg_image", 10)
         self._sub = self.create_subscription(
             Image, "image_raw", self.image_cb,
             qos_profile_sensor_data
@@ -67,7 +67,7 @@ class Yolov8Node(Node):
 
             # convert image + predict
             cv_image = self.cv_bridge.imgmsg_to_cv2(msg)
-            results = self.yolo.predict(source=cv_image)[0]
+            results = self.yolo.predict(source=cv_image, verbose=False)[0]
 
             if len(results) == 0:
                 return
