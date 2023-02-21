@@ -76,6 +76,13 @@ class Yolov8Node(Node):
             detections_msg = Detection2DArray()
 
             for b in results.boxes:
+
+                label = self.yolo.names[int(b.cls.cpu())]
+                score = float(b.conf.cpu())
+
+                if score < self.threshold:
+                    continue
+
                 detection = Detection2D()
 
                 box = b.xywh[0].cpu()
@@ -88,15 +95,11 @@ class Yolov8Node(Node):
 
                 # get hypothesis
                 hypothesis = ObjectHypothesisWithPose()
-                hypothesis.hypothesis.class_id = self.yolo.names[int(
-                    b.cls.cpu())]
-                hypothesis.hypothesis.score = float(b.conf.cpu())
+                hypothesis.hypothesis.class_id = label
+                hypothesis.hypothesis.score = score
                 detection.results.append(hypothesis)
 
                 # draw boxes for debug
-                label = hypothesis.hypothesis.class_id
-                score = hypothesis.hypothesis.score
-
                 if label not in self._class_to_color:
                     r = random.randint(0, 255)
                     g = random.randint(0, 255)
