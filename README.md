@@ -7,7 +7,7 @@ ROS 2 wrap for [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) 
 ```shell
 $ cd ~/ros2_ws/src
 $ git clone https://github.com/mgonzs13/yolov8_ros.git
-$ pip3 install -r requirements.txt
+$ pip3 install -r yolov8_ros/requirements.txt
 $ cd ~/ros2_ws
 $ colcon build
 ```
