@@ -91,8 +91,8 @@ class Yolov8Node(Node):
                     box = b.xywh[0]
 
                     # get boxes values
-                    detection.bbox.center.x = float(box[0])
-                    detection.bbox.center.y = float(box[1])
+                    detection.bbox.center.position.x = float(box[0])
+                    detection.bbox.center.position.y = float(box[1])
                     detection.bbox.size_x = float(box[2])
                     detection.bbox.size_y = float(box[3])
 
@@ -110,10 +110,10 @@ class Yolov8Node(Node):
                         self._class_to_color[label] = (r, g, b)
                     color = self._class_to_color[label]
 
-                    min_pt = (round(detection.bbox.center.x - detection.bbox.size_x / 2.0),
-                              round(detection.bbox.center.y - detection.bbox.size_y / 2.0))
-                    max_pt = (round(detection.bbox.center.x + detection.bbox.size_x / 2.0),
-                              round(detection.bbox.center.y + detection.bbox.size_y / 2.0))
+                    min_pt = (round(detection.bbox.center.position.x - detection.bbox.size_x / 2.0),
+                              round(detection.bbox.center.position.y - detection.bbox.size_y / 2.0))
+                    max_pt = (round(detection.bbox.center.position.x + detection.bbox.size_x / 2.0),
+                              round(detection.bbox.center.position.y + detection.bbox.size_y / 2.0))
                     cv2.rectangle(cv_image, min_pt, max_pt, color, 2)
 
                     label = "{} {:.3f}".format(label, score)
