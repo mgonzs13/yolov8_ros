@@ -1,6 +1,6 @@
 # yolov8_ros
 
-ROS 2 wrap for [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) to perform object detection.
+ROS 2 wrap for [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) to perform object detection and tracking.
 
 
 ## Installation
