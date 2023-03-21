@@ -136,10 +136,10 @@ class Yolov8Node(Node):
                 detection.bbox.size_y = float(box[3])
 
                 # get track id
-                track_id = -1
+                track_id = ""
                 if not b.id is None:
-                    track_id = int(b.id)
-                detection.id = str(track_id)
+                    track_id = str(int(b.id))
+                detection.id = track_id
 
                 # get hypothesis
                 hypothesis = ObjectHypothesisWithPose()
