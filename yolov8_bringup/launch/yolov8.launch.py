@@ -16,6 +16,12 @@ def generate_launch_description():
         default_value="yolov8m.pt",
         description="Model name or path")
 
+    tracker = LaunchConfiguration("tracker")
+    tracker_cmd = DeclareLaunchArgument(
+        "tracker",
+        default_value="bytetrack.yaml",
+        description="Tracker name or path")
+
     device = LaunchConfiguration("device")
     device_cmd = DeclareLaunchArgument(
         "device",
@@ -55,6 +61,7 @@ def generate_launch_description():
         name="yolov8_node",
         namespace=namespace,
         parameters=[{"model": model,
+                     "tracker": tracker,
                      "device": device,
                      "enable": enable,
                      "threshold": threshold}],
@@ -64,6 +71,7 @@ def generate_launch_description():
     ld = LaunchDescription()
 
     ld.add_action(model_cmd)
+    ld.add_action(tracker_cmd)
     ld.add_action(device_cmd)
     ld.add_action(enable_cmd)
     ld.add_action(threshold_cmd)
