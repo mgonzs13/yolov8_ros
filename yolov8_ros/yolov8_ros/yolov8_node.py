@@ -180,4 +180,5 @@ def main():
     rclpy.init()
     node = Yolov8Node()
     rclpy.spin(node)
+    node.destroy_node()
     rclpy.shutdown()
