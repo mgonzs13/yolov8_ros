@@ -9,6 +9,7 @@ $ cd ~/ros2_ws/src
 $ git clone https://github.com/mgonzs13/yolov8_ros.git
 $ pip3 install -r yolov8_ros/requirements.txt
 $ cd ~/ros2_ws
+$ rosdep install --from-paths src --ignore-src -r -y
 $ colcon build
 ```
 
