@@ -13,10 +13,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='miguel',
+    maintainer='Miguel Ángel González Santamarta',
     maintainer_email='mgons@unileon.es',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='YOLOv8 for ROS 2',
+    license='GPL-3',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
