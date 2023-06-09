@@ -28,6 +28,7 @@ from ultralytics.tracker import BOTSORT, BYTETracker
 from ultralytics.tracker.trackers.basetrack import BaseTrack
 from ultralytics.yolo.utils import IterableSimpleNamespace, yaml_load
 from ultralytics.yolo.utils.checks import check_requirements, check_yaml
+from ultralytics.yolo.engine.results import Results
 
 from sensor_msgs.msg import Image
 from vision_msgs.msg import Detection2D
@@ -111,12 +112,13 @@ class Yolov8Node(Node):
                 source=cv_image,
                 verbose=False,
                 stream=False,
-                conf=0.1,
+                conf=self.threshold,
                 mode="track"
             )
+            results: Results = results[0].cpu()
 
-            # track
-            det = results[0].boxes.cpu().numpy()
+            # tracking
+            det = results.boxes.numpy()
 
             if len(det) > 0:
                 im0s = self.yolo.predictor.batch[2]
@@ -124,27 +126,22 @@ class Yolov8Node(Node):
 
                 tracks = self.tracker.update(det, im0s[0])
                 if len(tracks) > 0:
-                    results[0].update(boxes=torch.as_tensor(tracks[:, :-1]))
+                    results.update(boxes=torch.as_tensor(tracks[:, :-1]))
 
             # create detections msg
             detections_msg = Detection2DArray()
             detections_msg.header = msg.header
 
-            results = results[0].cpu()
-
-            for b in results.boxes:
-
-                label = self.yolo.names[int(b.cls)]
-                score = float(b.conf)
-
-                if score < self.threshold:
-                    continue
+            for box_data in results.boxes:
 
                 detection = Detection2D()
 
-                box = b.xywh[0]
+                # get label and score
+                label = self.yolo.names[int(box_data.cls)]
+                score = float(box_data.conf)
 
                 # get boxes values
+                box = box_data.xywh[0]
                 detection.bbox.center.position.x = float(box[0])
                 detection.bbox.center.position.y = float(box[1])
                 detection.bbox.size_x = float(box[2])
@@ -152,11 +149,11 @@ class Yolov8Node(Node):
 
                 # get track id
                 track_id = ""
-                if not b.id is None:
-                    track_id = str(int(b.id))
+                if box_data.is_track:
+                    track_id = str(int(box_data.id))
                 detection.id = track_id
 
-                # get hypothesis
+                # create hypothesis
                 hypothesis = ObjectHypothesisWithPose()
                 hypothesis.hypothesis.class_id = label
                 hypothesis.hypothesis.score = score
@@ -166,8 +163,8 @@ class Yolov8Node(Node):
                 if label not in self._class_to_color:
                     r = random.randint(0, 255)
                     g = random.randint(0, 255)
-                    b = random.randint(0, 255)
-                    self._class_to_color[label] = (r, g, b)
+                    box_data = random.randint(0, 255)
+                    self._class_to_color[label] = (r, g, box_data)
                 color = self._class_to_color[label]
 
                 min_pt = (round(detection.bbox.center.position.x - detection.bbox.size_x / 2.0),
