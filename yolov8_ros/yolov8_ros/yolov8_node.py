@@ -14,21 +14,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import cv2
-import torch
-import random
-
 import rclpy
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.node import Node
 from cv_bridge import CvBridge
 
+import torch
 from ultralytics import YOLO
-from ultralytics.tracker import BOTSORT, BYTETracker
-from ultralytics.tracker.trackers.basetrack import BaseTrack
-from ultralytics.yolo.utils import IterableSimpleNamespace, yaml_load
-from ultralytics.yolo.utils.checks import check_requirements, check_yaml
-from ultralytics.yolo.engine.results import Results
+from ultralytics.trackers import BOTSORT, BYTETracker
+from ultralytics.trackers.basetrack import BaseTrack
+from ultralytics.utils import IterableSimpleNamespace, yaml_load
+from ultralytics.utils.checks import check_requirements, check_yaml
+from ultralytics.engine.results import Results
 
 from sensor_msgs.msg import Image
 from vision_msgs.msg import Detection2D
@@ -63,7 +60,6 @@ class Yolov8Node(Node):
         self.enable = self.get_parameter(
             "enable").get_parameter_value().bool_value
 
-        self._class_to_color = {}
         self.cv_bridge = CvBridge()
         self.tracker = self.create_tracker(tracker)
         self.yolo = YOLO(model)
@@ -72,7 +68,6 @@ class Yolov8Node(Node):
 
         # topcis
         self._pub = self.create_publisher(Detection2DArray, "detections", 10)
-        self._dbg_pub = self.create_publisher(Image, "dbg_image", 10)
         self._sub = self.create_subscription(
             Image, "image_raw", self.image_cb,
             qos_profile_sensor_data
@@ -81,7 +76,7 @@ class Yolov8Node(Node):
         # services
         self._srv = self.create_service(SetBool, "enable", self.enable_cb)
 
-    def create_tracker(self, tracker_yaml) -> BaseTrack:
+    def create_tracker(self, tracker_yaml: str) -> BaseTrack:
 
         TRACKER_MAP = {"bytetrack": BYTETracker, "botsort": BOTSORT}
         check_requirements("lap")  # for linear_assignment
@@ -159,33 +154,11 @@ class Yolov8Node(Node):
                 hypothesis.hypothesis.score = score
                 detection.results.append(hypothesis)
 
-                # draw boxes for debug
-                if label not in self._class_to_color:
-                    r = random.randint(0, 255)
-                    g = random.randint(0, 255)
-                    box_data = random.randint(0, 255)
-                    self._class_to_color[label] = (r, g, box_data)
-                color = self._class_to_color[label]
-
-                min_pt = (round(detection.bbox.center.position.x - detection.bbox.size_x / 2.0),
-                          round(detection.bbox.center.position.y - detection.bbox.size_y / 2.0))
-                max_pt = (round(detection.bbox.center.position.x + detection.bbox.size_x / 2.0),
-                          round(detection.bbox.center.position.y + detection.bbox.size_y / 2.0))
-                cv2.rectangle(cv_image, min_pt, max_pt, color, 2)
-
-                label = "{} ({}) ({:.3f})".format(label, str(track_id), score)
-                pos = (min_pt[0] + 5, min_pt[1] + 25)
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.putText(cv_image, label, pos, font,
-                            1, color, 1, cv2.LINE_AA)
-
                 # append msg
                 detections_msg.detections.append(detection)
 
-            # publish detections and dbg image
+            # publish detections
             self._pub.publish(detections_msg)
-            self._dbg_pub.publish(self.cv_bridge.cv2_to_imgmsg(cv_image,
-                                                               encoding=msg.encoding))
 
 
 def main():

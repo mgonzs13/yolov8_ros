@@ -83,6 +83,14 @@ def generate_launch_description():
         remappings=[("image_raw", input_image_topic)]
     )
 
+    debug_node_cmd = Node(
+        package="yolov8_ros",
+        executable="debug_node",
+        name="debug_node",
+        namespace=namespace,
+        remappings=[("image_raw", input_image_topic)]
+    )
+
     ld = LaunchDescription()
 
     ld.add_action(model_cmd)
@@ -94,5 +102,6 @@ def generate_launch_description():
     ld.add_action(namespace_cmd)
 
     ld.add_action(detector_node_cmd)
+    ld.add_action(debug_node_cmd)
 
     return ld
