@@ -76,10 +76,18 @@ def generate_launch_description():
         name="yolov8_node",
         namespace=namespace,
         parameters=[{"model": model,
-                     "tracker": tracker,
                      "device": device,
                      "enable": enable,
                      "threshold": threshold}],
+        remappings=[("image_raw", input_image_topic)]
+    )
+
+    tracking_node_cmd = Node(
+        package="yolov8_ros",
+        executable="tracking_node",
+        name="tracking_node",
+        namespace=namespace,
+        parameters=[{"tracker": tracker}],
         remappings=[("image_raw", input_image_topic)]
     )
 
@@ -88,7 +96,8 @@ def generate_launch_description():
         executable="debug_node",
         name="debug_node",
         namespace=namespace,
-        remappings=[("image_raw", input_image_topic)]
+        remappings=[("image_raw", input_image_topic),
+                    ("detections", "tracking")]
     )
 
     ld = LaunchDescription()
@@ -102,6 +111,7 @@ def generate_launch_description():
     ld.add_action(namespace_cmd)
 
     ld.add_action(detector_node_cmd)
+    ld.add_action(tracking_node_cmd)
     ld.add_action(debug_node_cmd)
 
     return ld

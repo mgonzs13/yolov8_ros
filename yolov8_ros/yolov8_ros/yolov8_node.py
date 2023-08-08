@@ -17,15 +17,12 @@
 import rclpy
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.node import Node
+
 from cv_bridge import CvBridge
 
-import torch
 from ultralytics import YOLO
-from ultralytics.trackers import BOTSORT, BYTETracker
-from ultralytics.trackers.basetrack import BaseTrack
-from ultralytics.utils import IterableSimpleNamespace, yaml_load
-from ultralytics.utils.checks import check_requirements, check_yaml
 from ultralytics.engine.results import Results
+from ultralytics.engine.results import Boxes
 
 from sensor_msgs.msg import Image
 from vision_msgs.msg import Detection2D
@@ -44,10 +41,6 @@ class Yolov8Node(Node):
         model = self.get_parameter(
             "model").get_parameter_value().string_value
 
-        self.declare_parameter("tracker", "bytetrack.yaml")
-        tracker = self.get_parameter(
-            "tracker").get_parameter_value().string_value
-
         self.declare_parameter("device", "cuda:0")
         device = self.get_parameter(
             "device").get_parameter_value().string_value
@@ -61,7 +54,6 @@ class Yolov8Node(Node):
             "enable").get_parameter_value().bool_value
 
         self.cv_bridge = CvBridge()
-        self.tracker = self.create_tracker(tracker)
         self.yolo = YOLO(model)
         self.yolo.fuse()
         self.yolo.to(device)
@@ -75,19 +67,6 @@ class Yolov8Node(Node):
 
         # services
         self._srv = self.create_service(SetBool, "enable", self.enable_cb)
-
-    def create_tracker(self, tracker_yaml: str) -> BaseTrack:
-
-        TRACKER_MAP = {"bytetrack": BYTETracker, "botsort": BOTSORT}
-        check_requirements("lap")  # for linear_assignment
-
-        tracker = check_yaml(tracker_yaml)
-        cfg = IterableSimpleNamespace(**yaml_load(tracker))
-
-        assert cfg.tracker_type in ["bytetrack", "botsort"], \
-            f"Only support 'bytetrack' and 'botsort' for now, but got '{cfg.tracker_type}'"
-        tracker = TRACKER_MAP[cfg.tracker_type](args=cfg, frame_rate=1)
-        return tracker
 
     def enable_cb(self,
                   req: SetBool.Request,
@@ -107,26 +86,15 @@ class Yolov8Node(Node):
                 source=cv_image,
                 verbose=False,
                 stream=False,
-                conf=self.threshold,
-                mode="track"
+                conf=self.threshold
             )
             results: Results = results[0].cpu()
-
-            # tracking
-            det = results.boxes.numpy()
-
-            if len(det) > 0:
-                im0s = self.yolo.predictor.batch[2]
-                im0s = im0s if isinstance(im0s, list) else [im0s]
-
-                tracks = self.tracker.update(det, im0s[0])
-                if len(tracks) > 0:
-                    results.update(boxes=torch.as_tensor(tracks[:, :-1]))
 
             # create detections msg
             detections_msg = Detection2DArray()
             detections_msg.header = msg.header
 
+            box_data: Boxes
             for box_data in results.boxes:
 
                 detection = Detection2D()
@@ -141,12 +109,6 @@ class Yolov8Node(Node):
                 detection.bbox.center.position.y = float(box[1])
                 detection.bbox.size_x = float(box[2])
                 detection.bbox.size_y = float(box[3])
-
-                # get track id
-                track_id = ""
-                if box_data.is_track:
-                    track_id = str(int(box_data.id))
-                detection.id = track_id
 
                 # create hypothesis
                 hypothesis = ObjectHypothesisWithPose()
