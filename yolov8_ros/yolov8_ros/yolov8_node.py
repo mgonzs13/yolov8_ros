@@ -26,12 +26,15 @@ from ultralytics import YOLO
 from ultralytics.engine.results import Results
 from ultralytics.engine.results import Boxes
 from ultralytics.engine.results import Masks
+from ultralytics.engine.results import Keypoints
 
 from sensor_msgs.msg import Image
 from vision_msgs.msg import Point2D
 from vision_msgs.msg import BoundingBox3D
 from vision_msgs.msg import ObjectHypothesis
 from yolov8_msgs.msg import Mask
+from yolov8_msgs.msg import KeyPoint
+from yolov8_msgs.msg import KeyPointArray
 from yolov8_msgs.msg import Detection
 from yolov8_msgs.msg import DetectionArray
 from std_srvs.srv import SetBool
@@ -140,6 +143,34 @@ class Yolov8Node(Node):
 
         return masks_list
 
+    def parse_keypoints(self, results: Results) -> List[KeyPointArray]:
+
+        keypoints_list = []
+
+        points: Keypoints
+        for points in results.keypoints:
+
+            msg_array = KeyPointArray()
+
+            if points.conf is None:
+                continue
+
+            for kp_id, (p, conf) in enumerate(zip(points.xy[0], points.conf[0])):
+
+                if conf >= self.threshold:
+                    msg = KeyPoint()
+
+                    msg.id = kp_id + 1
+                    msg.point.x = float(p[0])
+                    msg.point.y = float(p[1])
+                    msg.score = float(conf)
+
+                    msg_array.data.append(msg)
+
+            keypoints_list.append(msg_array)
+
+        return keypoints_list
+
     def image_cb(self, msg: Image) -> None:
 
         if self.enable:
@@ -161,6 +192,9 @@ class Yolov8Node(Node):
             if results.masks:
                 masks = self.parse_masks(results)
 
+            if results.keypoints:
+                keypoints = self.parse_keypoints(results)
+
             # create detection msgs
             detections_msg = DetectionArray()
 
@@ -174,6 +208,9 @@ class Yolov8Node(Node):
 
                 if results.masks:
                     aux_msg.mask = masks[i]
+
+                if results.keypoints:
+                    aux_msg.keypoints = keypoints[i]
 
                 detections_msg.detections.append(aux_msg)
 

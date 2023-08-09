@@ -25,9 +25,11 @@ from rclpy.node import Node
 
 import message_filters
 from cv_bridge import CvBridge
+from ultralytics.utils.plotting import Annotator, colors
 
 from sensor_msgs.msg import Image
 from vision_msgs.msg import BoundingBox3D
+from yolov8_msgs.msg import KeyPoint
 from yolov8_msgs.msg import Detection
 from yolov8_msgs.msg import DetectionArray
 
@@ -56,13 +58,13 @@ class DebugNode(Node):
         # get detection info
         label = detection.hypothesis.class_id
         score = detection.hypothesis.score
-        box: BoundingBox3D = detection.box
+        box_msg: BoundingBox3D = detection.box
         track_id = detection.id
 
-        min_pt = (round(box.center.position.x - box.size.x / 2.0),
-                  round(box.center.position.y - box.size.y / 2.0))
-        max_pt = (round(box.center.position.x + box.size.x / 2.0),
-                  round(box.center.position.y + box.size.y / 2.0))
+        min_pt = (round(box_msg.center.position.x - box_msg.size.x / 2.0),
+                  round(box_msg.center.position.y - box_msg.size.y / 2.0))
+        max_pt = (round(box_msg.center.position.x + box_msg.size.x / 2.0),
+                  round(box_msg.center.position.y + box_msg.size.y / 2.0))
 
         # draw box
         cv2.rectangle(cv_image, min_pt, max_pt, color, 2)
@@ -82,11 +84,42 @@ class DebugNode(Node):
         mask_array = np.array([[int(ele.x), int(ele.y)]
                               for ele in mask_msg.data])
 
-        layer = cv_image.copy()
-        layer = cv2.fillPoly(layer, pts=[mask_array], color=color)
-        cv2.addWeighted(cv_image, 0.4, layer, 0.6, 0, cv_image)
-        cv_image = cv2.polylines(cv_image, [mask_array], isClosed=True,
-                                 color=color, thickness=2, lineType=cv2.LINE_AA)
+        if mask_array:
+            layer = cv_image.copy()
+            layer = cv2.fillPoly(layer, pts=[mask_array], color=color)
+            cv2.addWeighted(cv_image, 0.4, layer, 0.6, 0, cv_image)
+            cv_image = cv2.polylines(cv_image, [mask_array], isClosed=True,
+                                     color=color, thickness=2, lineType=cv2.LINE_AA)
+        return cv_image
+
+    def draw_keypoints(self, cv_image: cv2.Mat, detection: Detection) -> cv2.Mat:
+
+        keypoints_msg = detection.keypoints
+
+        ann = Annotator(cv_image)
+
+        kp: KeyPoint
+        for kp in keypoints_msg.data:
+            color_k = [int(x) for x in ann.kpt_color[kp.id]
+                       ] if len(keypoints_msg.data) == 17 else colors(kp.id)
+
+            cv2.circle(cv_image, (int(kp.point.x), int(kp.point.y)),
+                       5, color_k, -1, lineType=cv2.LINE_AA)
+
+        def get_pk_pose(kp_id: int) -> Tuple[int]:
+            for kp in keypoints_msg.data:
+                if kp.id == kp_id:
+                    return (int(kp.point.x), int(kp.point.y))
+            return None
+
+        for i, sk in enumerate(ann.skeleton):
+            kp1_pos = get_pk_pose(sk[0])
+            kp2_pos = get_pk_pose(sk[1])
+
+            if kp1_pos is not None and kp2_pos is not None:
+                cv2.line(cv_image, kp1_pos, kp2_pos, [
+                    int(x) for x in ann.limb_color[i]], thickness=2, lineType=cv2.LINE_AA)
+
         return cv_image
 
     def detections_cb(self, img_msg: Image, detection_msg: DetectionArray) -> None:
@@ -109,6 +142,7 @@ class DebugNode(Node):
 
             cv_image = self.draw_box(cv_image, detection, color)
             cv_image = self.draw_mask(cv_image, detection, color)
+            cv_image = self.draw_keypoints(cv_image, detection)
 
         # publish dbg image
         self._dbg_pub.publish(self.cv_bridge.cv2_to_imgmsg(cv_image,
