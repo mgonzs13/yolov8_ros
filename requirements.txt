@@ -1,2 +1,2 @@
 opencv-python
-ultralytics==8.0.149
+ultralytics==8.0.150

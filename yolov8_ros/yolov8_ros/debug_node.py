@@ -84,7 +84,7 @@ class DebugNode(Node):
         mask_array = np.array([[int(ele.x), int(ele.y)]
                               for ele in mask_msg.data])
 
-        if mask_array:
+        if mask_msg.data:
             layer = cv_image.copy()
             layer = cv2.fillPoly(layer, pts=[mask_array], color=color)
             cv2.addWeighted(cv_image, 0.4, layer, 0.6, 0, cv_image)

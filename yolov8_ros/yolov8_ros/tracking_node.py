@@ -80,9 +80,9 @@ class TrackingNode(Node):
         # convert image
         cv_image = self.cv_bridge.imgmsg_to_cv2(img_msg)
 
+        # parse detections
         detection_list = []
         detection: Detection
-        # parse detections
         for detection in detections_msg.detections:
 
             detection_list.append(
