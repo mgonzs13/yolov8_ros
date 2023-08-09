@@ -30,8 +30,8 @@ from ultralytics.utils.checks import check_requirements, check_yaml
 from ultralytics.engine.results import Boxes
 
 from sensor_msgs.msg import Image
-from vision_msgs.msg import Detection2D
-from vision_msgs.msg import Detection2DArray
+from yolov8_msgs.msg import Detection
+from yolov8_msgs.msg import DetectionArray
 
 
 class TrackingNode(Node):
@@ -48,12 +48,12 @@ class TrackingNode(Node):
         self.tracker = self.create_tracker(tracker)
 
         # topcis
-        self._pub = self.create_publisher(Detection2DArray, "tracking", 10)
+        self._pub = self.create_publisher(DetectionArray, "tracking", 10)
 
         image_sub = message_filters.Subscriber(
             self, Image, "image_raw", qos_profile=qos_profile_sensor_data)
         detections_sub = message_filters.Subscriber(
-            self, Detection2DArray, "detections", qos_profile=10)
+            self, DetectionArray, "detections", qos_profile=10)
 
         self._synchronizer = message_filters.ApproximateTimeSynchronizer(
             (image_sub, detections_sub), 10, 0.5)
@@ -72,37 +72,37 @@ class TrackingNode(Node):
         tracker = TRACKER_MAP[cfg.tracker_type](args=cfg, frame_rate=1)
         return tracker
 
-    def detections_cb(self, img_msg: Image, detections_msg: Detection2DArray) -> None:
+    def detections_cb(self, img_msg: Image, detections_msg: DetectionArray) -> None:
 
-        tracked_detections_msg = Detection2DArray()
+        tracked_detections_msg = DetectionArray()
         tracked_detections_msg.header = img_msg.header
 
         # convert image
         cv_image = self.cv_bridge.imgmsg_to_cv2(img_msg)
 
         detection_list = []
-        detection: Detection2D
+        detection: Detection
         # parse detections
         for detection in detections_msg.detections:
 
             detection_list.append(
                 [
-                    detection.bbox.center.position.x - detection.bbox.size_x / 2,
-                    detection.bbox.center.position.y - detection.bbox.size_y / 2,
-                    detection.bbox.center.position.x + detection.bbox.size_x / 2,
-                    detection.bbox.center.position.y + detection.bbox.size_y / 2,
-                    detection.results[0].hypothesis.score,
+                    detection.box.center.position.x - detection.box.size.x / 2,
+                    detection.box.center.position.y - detection.box.size.y / 2,
+                    detection.box.center.position.x + detection.box.size.x / 2,
+                    detection.box.center.position.y + detection.box.size.y / 2,
+                    detection.hypothesis.score,
                     0
                 ]
             )
 
-        det = Boxes(
-            np.array(detection_list),
-            (img_msg.height, img_msg.width)
-        )
-
         # tracking
-        if len(det) > 0:
+        if len(detection_list) > 0:
+
+            det = Boxes(
+                np.array(detection_list),
+                (img_msg.height, img_msg.width)
+            )
 
             tracks = self.tracker.update(det, cv_image)
 
@@ -113,15 +113,15 @@ class TrackingNode(Node):
                     tracked_box = Boxes(
                         t[:-1], (img_msg.height, img_msg.width))
 
-                    tracked_detection: Detection2D = detections_msg.detections[int(
+                    tracked_detection: Detection = detections_msg.detections[int(
                         t[-1])]
 
                     # get boxes values
                     box = tracked_box.xywh[0]
-                    tracked_detection.bbox.center.position.x = float(box[0])
-                    tracked_detection.bbox.center.position.y = float(box[1])
-                    tracked_detection.bbox.size_x = float(box[2])
-                    tracked_detection.bbox.size_y = float(box[3])
+                    tracked_detection.box.center.position.x = float(box[0])
+                    tracked_detection.box.center.position.y = float(box[1])
+                    tracked_detection.box.size.x = float(box[2])
+                    tracked_detection.box.size.y = float(box[3])
 
                     # get track id
                     track_id = ""

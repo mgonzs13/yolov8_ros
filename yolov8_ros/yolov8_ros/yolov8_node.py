@@ -14,6 +14,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import rclpy
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.node import Node
@@ -23,11 +25,15 @@ from cv_bridge import CvBridge
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 from ultralytics.engine.results import Boxes
+from ultralytics.engine.results import Masks
 
 from sensor_msgs.msg import Image
-from vision_msgs.msg import Detection2D
-from vision_msgs.msg import ObjectHypothesisWithPose
-from vision_msgs.msg import Detection2DArray
+from vision_msgs.msg import Point2D
+from vision_msgs.msg import BoundingBox3D
+from vision_msgs.msg import ObjectHypothesis
+from yolov8_msgs.msg import Mask
+from yolov8_msgs.msg import Detection
+from yolov8_msgs.msg import DetectionArray
 from std_srvs.srv import SetBool
 
 
@@ -58,8 +64,8 @@ class Yolov8Node(Node):
         self.yolo.fuse()
         self.yolo.to(device)
 
-        # topcis
-        self._pub = self.create_publisher(Detection2DArray, "detections", 10)
+        # topics
+        self._pub = self.create_publisher(DetectionArray, "detections", 10)
         self._sub = self.create_subscription(
             Image, "image_raw", self.image_cb,
             qos_profile_sensor_data
@@ -76,6 +82,64 @@ class Yolov8Node(Node):
         res.success = True
         return res
 
+    def parse_hypothesis(self, results: Results) -> List[ObjectHypothesis]:
+
+        hypothesis_list = []
+
+        box_data: Boxes
+        for box_data in results.boxes:
+            hypothesis = ObjectHypothesis()
+            hypothesis.class_id = self.yolo.names[int(box_data.cls)]
+            hypothesis.score = float(box_data.conf)
+            hypothesis_list.append(hypothesis)
+
+        return hypothesis_list
+
+    def parse_boxes(self, results: Results) -> List[BoundingBox3D]:
+
+        boxes_list = []
+
+        box_data: Boxes
+        for box_data in results.boxes:
+
+            msg = BoundingBox3D()
+
+            # get boxes values
+            box = box_data.xywh[0]
+            msg.center.position.x = float(box[0])
+            msg.center.position.y = float(box[1])
+            msg.size.x = float(box[2])
+            msg.size.y = float(box[3])
+
+            # append msg
+            boxes_list.append(msg)
+
+        return boxes_list
+
+    def parse_masks(self, results: Results) -> List[Mask]:
+
+        masks_list = []
+
+        def create_point2d(x: float, y: float) -> Point2D:
+            p = Point2D()
+            p.x = x
+            p.y = y
+            return p
+
+        mask: Masks
+        for mask in results.masks:
+
+            msg = Mask()
+
+            msg.data = [create_point2d(float(ele[0]), float(ele[1]))
+                        for ele in mask.xy[0].tolist()]
+            msg.height = results.orig_img.shape[0]
+            msg.width = results.orig_img.shape[1]
+
+            masks_list.append(msg)
+
+        return masks_list
+
     def image_cb(self, msg: Image) -> None:
 
         if self.enable:
@@ -90,36 +154,31 @@ class Yolov8Node(Node):
             )
             results: Results = results[0].cpu()
 
-            # create detections msg
-            detections_msg = Detection2DArray()
-            detections_msg.header = msg.header
+            if results.boxes:
+                hypothesis = self.parse_hypothesis(results)
+                boxes = self.parse_boxes(results)
 
-            box_data: Boxes
-            for box_data in results.boxes:
+            if results.masks:
+                masks = self.parse_masks(results)
 
-                detection = Detection2D()
+            # create detection msgs
+            detections_msg = DetectionArray()
 
-                # get label and score
-                label = self.yolo.names[int(box_data.cls)]
-                score = float(box_data.conf)
+            for i in range(len(results)):
 
-                # get boxes values
-                box = box_data.xywh[0]
-                detection.bbox.center.position.x = float(box[0])
-                detection.bbox.center.position.y = float(box[1])
-                detection.bbox.size_x = float(box[2])
-                detection.bbox.size_y = float(box[3])
+                aux_msg = Detection()
 
-                # create hypothesis
-                hypothesis = ObjectHypothesisWithPose()
-                hypothesis.hypothesis.class_id = label
-                hypothesis.hypothesis.score = score
-                detection.results.append(hypothesis)
+                if results.boxes:
+                    aux_msg.hypothesis = hypothesis[i]
+                    aux_msg.box = boxes[i]
 
-                # append msg
-                detections_msg.detections.append(detection)
+                if results.masks:
+                    aux_msg.mask = masks[i]
+
+                detections_msg.detections.append(aux_msg)
 
             # publish detections
+            detections_msg.header = msg.header
             self._pub.publish(detections_msg)
 
 
