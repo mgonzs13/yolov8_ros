@@ -61,7 +61,7 @@ class BBox3DNode(Node):
             self, DetectionArray, "detections")
 
         self._synchronizer = message_filters.ApproximateTimeSynchronizer(
-            (self.points_sub, self.detections_sub), 5, 0.5)
+            (self.points_sub, self.detections_sub), 1, 0.5)
         self._synchronizer.registerCallback(self.on_detections)
 
     def transform(self, frame_id: str) -> Tuple[np.ndarray]:
@@ -108,6 +108,7 @@ class BBox3DNode(Node):
             points_msg.height, points_msg.width, -1)[:, :, :3]
 
         new_detections_msg = DetectionArray()
+        new_detections_msg.header = detections_msg.header
 
         for detection in detections_msg.detections:
             bb3d = self.convert_to_3d(points, detection)
@@ -146,18 +147,18 @@ class BBox3DNode(Node):
 
         mask = np.ix_(mask_y, mask_x)
 
-        points_masked = points[mask].reshape(-1, 3)
-        points_masked = points_masked[~np.isnan(points_masked).any(axis=1)]
+        masked_points = points[mask].reshape(-1, 3)
+        masked_points = masked_points[~np.isnan(masked_points).any(axis=1)]
 
-        if points_masked.size == 0:
+        if masked_points.size == 0:
             return None
 
         # filter points with clustering
-        self.kmeans.fit(points_masked)
+        self.kmeans.fit(masked_points)
         cluster_labels = self.kmeans.labels_
 
-        filtered_points = points_masked[cluster_labels == 0]
-        filtered_points_1 = points_masked[cluster_labels == 1]
+        filtered_points = masked_points[cluster_labels == 0]
+        filtered_points_1 = masked_points[cluster_labels == 1]
 
         if np.min(filtered_points) > np.min(filtered_points_1):
             filtered_points = filtered_points_1
@@ -168,7 +169,7 @@ class BBox3DNode(Node):
         max_z = np.max(filtered_points[:, 2])
 
         min_x = np.min(filtered_points[:, 0])
-        min_y = np.min(points_masked[:, 1])
+        min_y = np.min(masked_points[:, 1])
         min_z = np.min(filtered_points[:, 2])
 
         # create 3D BB
