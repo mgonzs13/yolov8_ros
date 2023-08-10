@@ -28,7 +28,7 @@ from cv_bridge import CvBridge
 from ultralytics.utils.plotting import Annotator, colors
 
 from sensor_msgs.msg import Image
-from vision_msgs.msg import BoundingBox3D
+from yolov8_msgs.msg import BoundingBox2D
 from yolov8_msgs.msg import KeyPoint
 from yolov8_msgs.msg import Detection
 from yolov8_msgs.msg import DetectionArray
@@ -56,9 +56,9 @@ class DebugNode(Node):
     def draw_box(self, cv_image: cv2.Mat, detection: Detection, color: Tuple[int]) -> cv2.Mat:
 
         # get detection info
-        label = detection.hypothesis.class_id
-        score = detection.hypothesis.score
-        box_msg: BoundingBox3D = detection.box
+        label = detection.class_name
+        score = detection.score
+        box_msg: BoundingBox2D = detection.box
         track_id = detection.id
 
         min_pt = (round(box_msg.center.position.x - box_msg.size.x / 2.0),
@@ -130,7 +130,7 @@ class DebugNode(Node):
         for detection in detection_msg.detections:
 
             # random color
-            label = detection.hypothesis.class_id
+            label = detection.class_name
 
             if label not in self._class_to_color:
                 r = random.randint(0, 255)

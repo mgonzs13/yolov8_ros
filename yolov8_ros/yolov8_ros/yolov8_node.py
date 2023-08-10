@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Dict
 
 import rclpy
 from rclpy.qos import qos_profile_sensor_data
@@ -29,9 +29,8 @@ from ultralytics.engine.results import Masks
 from ultralytics.engine.results import Keypoints
 
 from sensor_msgs.msg import Image
-from vision_msgs.msg import Point2D
-from vision_msgs.msg import BoundingBox3D
-from vision_msgs.msg import ObjectHypothesis
+from yolov8_msgs.msg import Point2D
+from yolov8_msgs.msg import BoundingBox2D
 from yolov8_msgs.msg import Mask
 from yolov8_msgs.msg import KeyPoint
 from yolov8_msgs.msg import KeyPointArray
@@ -85,27 +84,29 @@ class Yolov8Node(Node):
         res.success = True
         return res
 
-    def parse_hypothesis(self, results: Results) -> List[ObjectHypothesis]:
+    def parse_hypothesis(self, results: Results) -> List[Dict]:
 
         hypothesis_list = []
 
         box_data: Boxes
         for box_data in results.boxes:
-            hypothesis = ObjectHypothesis()
-            hypothesis.class_id = self.yolo.names[int(box_data.cls)]
-            hypothesis.score = float(box_data.conf)
+            hypothesis = {
+                "class_id": int(box_data.cls),
+                "class_name": self.yolo.names[int(box_data.cls)],
+                "score": float(box_data.conf)
+            }
             hypothesis_list.append(hypothesis)
 
         return hypothesis_list
 
-    def parse_boxes(self, results: Results) -> List[BoundingBox3D]:
+    def parse_boxes(self, results: Results) -> List[BoundingBox2D]:
 
         boxes_list = []
 
         box_data: Boxes
         for box_data in results.boxes:
 
-            msg = BoundingBox3D()
+            msg = BoundingBox2D()
 
             # get boxes values
             box = box_data.xywh[0]
@@ -203,7 +204,10 @@ class Yolov8Node(Node):
                 aux_msg = Detection()
 
                 if results.boxes:
-                    aux_msg.hypothesis = hypothesis[i]
+                    aux_msg.class_id = hypothesis[i]["class_id"]
+                    aux_msg.class_name = hypothesis[i]["class_name"]
+                    aux_msg.score = hypothesis[i]["score"]
+
                     aux_msg.box = boxes[i]
 
                 if results.masks:

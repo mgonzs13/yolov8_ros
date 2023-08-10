@@ -91,8 +91,8 @@ class TrackingNode(Node):
                     detection.box.center.position.y - detection.box.size.y / 2,
                     detection.box.center.position.x + detection.box.size.x / 2,
                     detection.box.center.position.y + detection.box.size.y / 2,
-                    detection.hypothesis.score,
-                    0
+                    detection.score,
+                    detection.class_id
                 ]
             )
 

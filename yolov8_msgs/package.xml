@@ -14,7 +14,7 @@
 
   <member_of_group>rosidl_interface_packages</member_of_group>
   <depend>std_msgs</depend>
-  <depend>vision_msgs</depend>
+  <depend>geometry_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
