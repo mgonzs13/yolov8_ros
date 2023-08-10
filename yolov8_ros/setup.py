@@ -23,6 +23,7 @@ setup(
                 'yolov8_node = yolov8_ros.yolov8_node:main',
                 'debug_node = yolov8_ros.debug_node:main',
                 'tracking_node = yolov8_ros.tracking_node:main',
+                'bbox3d_node = yolov8_ros.bbox3d_node:main',
         ],
     },
 )
