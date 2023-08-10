@@ -1,2 +1,3 @@
 opencv-python
 ultralytics==8.0.150
+scikit-learn==1.3.0

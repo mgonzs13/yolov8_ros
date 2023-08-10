@@ -48,7 +48,6 @@ class BBox3DNode(Node):
         # aux
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
-        self.kmeans = KMeans(n_clusters=2, n_init="auto")
 
         # pub
         self._pub = self.create_publisher(DetectionArray, "detections_3d", 10)
@@ -154,11 +153,16 @@ class BBox3DNode(Node):
             return None
 
         # filter points with clustering
-        self.kmeans.fit(masked_points)
-        cluster_labels = self.kmeans.labels_
+        labels = KMeans(
+            init="k-means++",
+            n_clusters=2,
+            n_init="auto",
+            max_iter=300,
+            algorithm="lloyd"
+        ).fit_predict(masked_points[:, 2].reshape(-1, 1))
 
-        filtered_points = masked_points[cluster_labels == 0]
-        filtered_points_1 = masked_points[cluster_labels == 1]
+        filtered_points = masked_points[labels == 0]
+        filtered_points_1 = masked_points[labels == 1]
 
         if np.min(filtered_points) > np.min(filtered_points_1):
             filtered_points = filtered_points_1
