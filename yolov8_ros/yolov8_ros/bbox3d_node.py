@@ -60,7 +60,7 @@ class BBox3DNode(Node):
             self, DetectionArray, "detections")
 
         self._synchronizer = message_filters.ApproximateTimeSynchronizer(
-            (self.points_sub, self.detections_sub), 1, 0.5)
+            (self.points_sub, self.detections_sub), 5, 0.5)
         self._synchronizer.registerCallback(self.on_detections)
 
     def transform(self, frame_id: str) -> Tuple[np.ndarray]:
@@ -149,7 +149,7 @@ class BBox3DNode(Node):
         masked_points = points[mask].reshape(-1, 3)
         masked_points = masked_points[~np.isnan(masked_points).any(axis=1)]
 
-        if masked_points.size == 0:
+        if masked_points.shape[0] < 2:
             return None
 
         # filter points with clustering
@@ -164,7 +164,7 @@ class BBox3DNode(Node):
         filtered_points = masked_points[labels == 0]
         filtered_points_1 = masked_points[labels == 1]
 
-        if np.min(filtered_points) > np.min(filtered_points_1):
+        if filtered_points_1.size > 0 and np.min(filtered_points) > np.min(filtered_points_1):
             filtered_points = filtered_points_1
 
         # max and min
