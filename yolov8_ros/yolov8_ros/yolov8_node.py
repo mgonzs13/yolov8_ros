@@ -32,8 +32,8 @@ from sensor_msgs.msg import Image
 from yolov8_msgs.msg import Point2D
 from yolov8_msgs.msg import BoundingBox2D
 from yolov8_msgs.msg import Mask
-from yolov8_msgs.msg import KeyPoint
-from yolov8_msgs.msg import KeyPointArray
+from yolov8_msgs.msg import KeyPoint2D
+from yolov8_msgs.msg import KeyPoint2DArray
 from yolov8_msgs.msg import Detection
 from yolov8_msgs.msg import DetectionArray
 from std_srvs.srv import SetBool
@@ -143,14 +143,14 @@ class Yolov8Node(Node):
 
         return masks_list
 
-    def parse_keypoints(self, results: Results) -> List[KeyPointArray]:
+    def parse_keypoints(self, results: Results) -> List[KeyPoint2DArray]:
 
         keypoints_list = []
 
         points: Keypoints
         for points in results.keypoints:
 
-            msg_array = KeyPointArray()
+            msg_array = KeyPoint2DArray()
 
             if points.conf is None:
                 continue
@@ -158,7 +158,7 @@ class Yolov8Node(Node):
             for kp_id, (p, conf) in enumerate(zip(points.xy[0], points.conf[0])):
 
                 if conf >= self.threshold:
-                    msg = KeyPoint()
+                    msg = KeyPoint2D()
 
                     msg.id = kp_id + 1
                     msg.point.x = float(p[0])

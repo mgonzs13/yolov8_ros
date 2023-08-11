@@ -32,7 +32,8 @@ from sensor_msgs.msg import Image
 from visualization_msgs.msg import Marker
 from visualization_msgs.msg import MarkerArray
 from yolov8_msgs.msg import BoundingBox2D
-from yolov8_msgs.msg import KeyPoint
+from yolov8_msgs.msg import KeyPoint2D
+from yolov8_msgs.msg import KeyPoint3D
 from yolov8_msgs.msg import Detection
 from yolov8_msgs.msg import DetectionArray
 
@@ -47,8 +48,10 @@ class DebugNode(Node):
 
         # pubs
         self._dbg_pub = self.create_publisher(Image, "dbg_image", 10)
-        self._markers_pub = self.create_publisher(
-            MarkerArray, "dgb_markers", 10)
+        self._bb_markers_pub = self.create_publisher(
+            MarkerArray, "dgb_bb_markers", 10)
+        self._kp_markers_pub = self.create_publisher(
+            MarkerArray, "dgb_kp_markers", 10)
 
         # subs
         image_sub = message_filters.Subscriber(
@@ -105,7 +108,7 @@ class DebugNode(Node):
 
         ann = Annotator(cv_image)
 
-        kp: KeyPoint
+        kp: KeyPoint2D
         for kp in keypoints_msg.data:
             color_k = [int(x) for x in ann.kpt_color[kp.id]
                        ] if len(keypoints_msg.data) == 17 else colors(kp.id)
@@ -129,7 +132,7 @@ class DebugNode(Node):
 
         return cv_image
 
-    def create_marker(self, detection: Detection) -> Marker:
+    def create_bb_marker(self, detection: Detection) -> Marker:
 
         bbox3d = detection.bbox3d
 
@@ -163,10 +166,42 @@ class DebugNode(Node):
 
         return marker
 
+    def create_kp_marker(self, keypoint: KeyPoint3D) -> Marker:
+
+        marker = Marker()
+
+        marker.ns = "yolov8_3d"
+        marker.type = Marker.SPHERE
+        marker.action = Marker.ADD
+        marker.frame_locked = False
+
+        marker.pose.position.x = keypoint.point.x
+        marker.pose.position.y = keypoint.point.y
+        marker.pose.position.z = keypoint.point.z
+
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.05
+        marker.scale.y = 0.05
+        marker.scale.z = 0.05
+
+        marker.color.b = keypoint.score * 255.0
+        marker.color.g = 0.0
+        marker.color.r = (1.0 - keypoint.score) * 255.0
+        marker.color.a = 0.4
+
+        marker.lifetime = Duration(seconds=1.0).to_msg()
+        marker.text = str(keypoint.id)
+
+        return marker
+
     def detections_cb(self, img_msg: Image, detection_msg: DetectionArray) -> None:
 
         cv_image = self.cv_bridge.imgmsg_to_cv2(img_msg)
-        marker_array = MarkerArray()
+        bb_marker_array = MarkerArray()
+        kp_marker_array = MarkerArray()
 
         detection: Detection
         for detection in detection_msg.detections:
@@ -187,15 +222,24 @@ class DebugNode(Node):
             cv_image = self.draw_keypoints(cv_image, detection)
 
             if detection.bbox3d.frame_id:
-                marker = self.create_marker(detection)
+                marker = self.create_bb_marker(detection)
                 marker.header.stamp = img_msg.header.stamp
-                marker.id = len(marker_array.markers)
-                marker_array.markers.append(marker)
+                marker.id = len(bb_marker_array.markers)
+                bb_marker_array.markers.append(marker)
+
+            if detection.keypoints3d.frame_id:
+                for kp in detection.keypoints3d.data:
+                    marker = self.create_kp_marker(kp)
+                    marker.header.frame_id = detection.keypoints3d.frame_id
+                    marker.header.stamp = img_msg.header.stamp
+                    marker.id = len(kp_marker_array.markers)
+                    kp_marker_array.markers.append(marker)
 
         # publish dbg image
         self._dbg_pub.publish(self.cv_bridge.cv2_to_imgmsg(cv_image,
                                                            encoding=img_msg.encoding))
-        self._markers_pub.publish(marker_array)
+        self._bb_markers_pub.publish(bb_marker_array)
+        self._kp_markers_pub.publish(kp_marker_array)
 
 
 def main():

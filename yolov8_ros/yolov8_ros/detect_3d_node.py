@@ -34,6 +34,8 @@ from geometry_msgs.msg import TransformStamped
 from yolov8_msgs.msg import Detection
 from yolov8_msgs.msg import DetectionArray
 from yolov8_msgs.msg import BoundingBox3D
+from yolov8_msgs.msg import KeyPoint3D
+from yolov8_msgs.msg import KeyPoint3DArray
 
 
 class BBox3DNode(Node):
@@ -64,32 +66,6 @@ class BBox3DNode(Node):
             (self.points_sub, self.detections_sub), 10, 0.5)
         self._synchronizer.registerCallback(self.on_detections)
 
-    def transform(self, frame_id: str) -> Tuple[np.ndarray]:
-        # transform position from pointcloud frame to target_frame
-        rotation = None
-        translation = None
-
-        try:
-            transform: TransformStamped = self.tf_buffer.lookup_transform(
-                self.target_frame,
-                frame_id,
-                rclpy.time.Time())
-
-            translation = np.array([transform.transform.translation.x,
-                                    transform.transform.translation.y,
-                                    transform.transform.translation.z])
-
-            rotation = np.array([transform.transform.rotation.w,
-                                 transform.transform.rotation.x,
-                                 transform.transform.rotation.y,
-                                 transform.transform.rotation.z])
-
-            return translation, rotation
-
-        except TransformException as ex:
-            self.get_logger().error(f"Could not transform: {ex}")
-            return None
-
     def on_detections(self,
                       points_msg: PointCloud2,
                       detections_msg: DetectionArray,
@@ -111,19 +87,29 @@ class BBox3DNode(Node):
         new_detections_msg.header = detections_msg.header
 
         for detection in detections_msg.detections:
-            bb3d = self.convert_to_3d(points, detection)
+            bbox3d = self.convert_bb_to_3d(points, detection)
 
-            if bb3d is not None:
+            if bbox3d is not None:
                 new_detections_msg.detections.append(detection)
-                new_detections_msg.detections[-1].bbox3d = BBox3DNode.transform_3d_box(
-                    bb3d, transform[0], transform[1])
+
+                bbox3d = BBox3DNode.transform_3d_box(
+                    bbox3d, transform[0], transform[1])
+                bbox3d.frame_id = self.target_frame
+                new_detections_msg.detections[-1].bbox3d = bbox3d
+
+                keypoints3d = self.convert_keypoints_to_3d(
+                    points, detection)
+                keypoints3d = BBox3DNode.transform_3d_keypoints(
+                    keypoints3d, transform[0], transform[1])
+                keypoints3d.frame_id = self.target_frame
+                new_detections_msg.detections[-1].keypoints3d = keypoints3d
 
         self._pub.publish(new_detections_msg)
 
-    def convert_to_3d(self,
-                      points: np.ndarray,
-                      detection: Detection
-                      ) -> BoundingBox3D:
+    def convert_bb_to_3d(self,
+                         points: np.ndarray,
+                         detection: Detection
+                         ) -> BoundingBox3D:
 
         if detection.mask.data:
             detection_mask_x = np.array(
@@ -199,9 +185,59 @@ class BBox3DNode(Node):
         msg.size.x = float(max_x - min_x)
         msg.size.y = float(max_y - min_y)
         msg.size.z = float(max_z - min_z)
-        msg.frame_id = self.target_frame
 
         return msg
+
+    def convert_keypoints_to_3d(self,
+                                points: np.ndarray,
+                                detection: Detection
+                                ) -> KeyPoint3DArray:
+
+        msg_array = KeyPoint3DArray()
+
+        for p in detection.keypoints.data:
+
+            if int(p.point.y) >= points.shape[0] or int(p.point.x) >= points.shape[1]:
+                continue
+
+            p3d = points[int(p.point.y)][int(p.point.x)]
+
+            if not np.isnan(p3d).any():
+                msg = KeyPoint3D()
+                msg.point.x = float(p3d[0])
+                msg.point.y = float(p3d[1])
+                msg.point.z = float(p3d[2])
+                msg.id = p.id
+                msg.score = p.score
+                msg_array.data.append(msg)
+
+        return msg_array
+
+    def transform(self, frame_id: str) -> Tuple[np.ndarray]:
+        # transform position from pointcloud frame to target_frame
+        rotation = None
+        translation = None
+
+        try:
+            transform: TransformStamped = self.tf_buffer.lookup_transform(
+                self.target_frame,
+                frame_id,
+                rclpy.time.Time())
+
+            translation = np.array([transform.transform.translation.x,
+                                    transform.transform.translation.y,
+                                    transform.transform.translation.z])
+
+            rotation = np.array([transform.transform.rotation.w,
+                                 transform.transform.rotation.x,
+                                 transform.transform.rotation.y,
+                                 transform.transform.rotation.z])
+
+            return translation, rotation
+
+        except TransformException as ex:
+            self.get_logger().error(f"Could not transform: {ex}")
+            return None
 
     @staticmethod
     def transform_3d_box(
@@ -235,6 +271,29 @@ class BBox3DNode(Node):
         bbox.size.z = abs(size[2])
 
         return bbox
+
+    @staticmethod
+    def transform_3d_keypoints(
+        keypoints: KeyPoint3DArray,
+        translation: np.ndarray,
+        rotation: np.ndarray,
+    ) -> KeyPoint3DArray:
+
+        for point in keypoints.data:
+            position = BBox3DNode.qv_mult(
+                rotation,
+                np.array([
+                    point.point.x,
+                    point.point.y,
+                    point.point.z
+                ])
+            ) + translation
+
+            point.point.x = position[0]
+            point.point.y = position[1]
+            point.point.z = position[2]
+
+        return keypoints
 
     @staticmethod
     def qv_mult(q: np.ndarray, v: np.ndarray) -> np.ndarray:

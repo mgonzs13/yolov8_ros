@@ -103,10 +103,10 @@ def generate_launch_description():
         remappings=[("image_raw", input_image_topic)]
     )
 
-    bbox3d_node_cmd = Node(
+    detect_3d_node_cmd = Node(
         package="yolov8_ros",
-        executable="bbox3d_node",
-        name="bbox3d_node",
+        executable="detect_3d_node",
+        name="detect_3d_node",
         namespace=namespace,
         parameters=[{"target_frame": target_frame}],
         remappings=[("points", input_points_topic),
@@ -136,7 +136,7 @@ def generate_launch_description():
 
     ld.add_action(detector_node_cmd)
     ld.add_action(tracking_node_cmd)
-    ld.add_action(bbox3d_node_cmd)
+    ld.add_action(detect_3d_node_cmd)
     ld.add_action(debug_node_cmd)
 
     return ld

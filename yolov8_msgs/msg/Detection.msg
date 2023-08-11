@@ -19,4 +19,7 @@ yolov8_msgs/BoundingBox3D bbox3d
 yolov8_msgs/Mask mask
 
 # keypoints for human pose estimation
-yolov8_msgs/KeyPointArray keypoints
+yolov8_msgs/KeyPoint2DArray keypoints
+
+# keypoints for human pose estimation
+yolov8_msgs/KeyPoint3DArray keypoints3d
