@@ -67,6 +67,12 @@ def generate_launch_description():
         default_value="/camera/depth_registered/points",
         description="Name of the input points topic")
 
+    target_frame = LaunchConfiguration("target_frame")
+    target_frame_cmd = DeclareLaunchArgument(
+        "target_frame",
+        default_value="base_link",
+        description="Target frame to transform the 3D boxes")
+
     namespace = LaunchConfiguration("namespace")
     namespace_cmd = DeclareLaunchArgument(
         "namespace",
@@ -102,6 +108,7 @@ def generate_launch_description():
         executable="bbox3d_node",
         name="bbox3d_node",
         namespace=namespace,
+        parameters=[{"target_frame": target_frame}],
         remappings=[("points", input_points_topic),
                     ("detections", "tracking")]
     )
@@ -124,6 +131,7 @@ def generate_launch_description():
     ld.add_action(threshold_cmd)
     ld.add_action(input_image_topic_cmd)
     ld.add_action(input_points_topic_cmd)
+    ld.add_action(target_frame_cmd)
     ld.add_action(namespace_cmd)
 
     ld.add_action(detector_node_cmd)

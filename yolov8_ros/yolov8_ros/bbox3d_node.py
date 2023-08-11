@@ -125,15 +125,27 @@ class BBox3DNode(Node):
                       detection: Detection
                       ) -> BoundingBox3D:
 
-        center_x = detection.bbox.center.position.x
-        center_y = detection.bbox.center.position.y
-        size_x = detection.bbox.size.x
-        size_y = detection.bbox.size.y
+        if detection.mask.data:
+            detection_mask_x = np.array(
+                [point.x for point in detection.mask.data])
+            detection_mask_y = np.array(
+                [point.y for point in detection.mask.data])
 
-        bb_min_x = int(center_x - size_x / 2.0)
-        bb_min_y = int(center_y - size_y / 2.0)
-        bb_max_x = int(center_x + size_x / 2.0)
-        bb_max_y = int(center_y + size_y / 2.0)
+            bb_min_x = int(np.min(detection_mask_x))
+            bb_min_y = int(np.min(detection_mask_y))
+            bb_max_x = int(np.max(detection_mask_x))
+            bb_max_y = int(np.max(detection_mask_y))
+
+        else:
+            center_x = detection.bbox.center.position.x
+            center_y = detection.bbox.center.position.y
+            size_x = detection.bbox.size.x
+            size_y = detection.bbox.size.y
+
+            bb_min_x = int(center_x - size_x / 2.0)
+            bb_min_y = int(center_y - size_y / 2.0)
+            bb_max_x = int(center_x + size_x / 2.0)
+            bb_max_y = int(center_y + size_y / 2.0)
 
         # masks for limiting the pc using bounding box
         mask_y = np.logical_and(
@@ -144,7 +156,6 @@ class BBox3DNode(Node):
             bb_min_x <= np.arange(points.shape[1]),
             bb_max_x >= np.arange(points.shape[1])
         )
-
         mask = np.ix_(mask_y, mask_x)
 
         masked_points = points[mask].reshape(-1, 3)
