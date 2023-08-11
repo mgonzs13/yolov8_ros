@@ -208,7 +208,7 @@ class Yolov8Node(Node):
                     aux_msg.class_name = hypothesis[i]["class_name"]
                     aux_msg.score = hypothesis[i]["score"]
 
-                    aux_msg.box = boxes[i]
+                    aux_msg.bbox = boxes[i]
 
                 if results.masks:
                     aux_msg.mask = masks[i]

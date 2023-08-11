@@ -20,14 +20,17 @@ import numpy as np
 from typing import Tuple
 
 import rclpy
-from rclpy.qos import qos_profile_sensor_data
 from rclpy.node import Node
+from rclpy.duration import Duration
+from rclpy.qos import qos_profile_sensor_data
 
 import message_filters
 from cv_bridge import CvBridge
 from ultralytics.utils.plotting import Annotator, colors
 
 from sensor_msgs.msg import Image
+from visualization_msgs.msg import Marker
+from visualization_msgs.msg import MarkerArray
 from yolov8_msgs.msg import BoundingBox2D
 from yolov8_msgs.msg import KeyPoint
 from yolov8_msgs.msg import Detection
@@ -42,8 +45,12 @@ class DebugNode(Node):
         self._class_to_color = {}
         self.cv_bridge = CvBridge()
 
+        # pubs
         self._dbg_pub = self.create_publisher(Image, "dbg_image", 10)
+        self._markers_pub = self.create_publisher(
+            MarkerArray, "dgb_markers", 10)
 
+        # subs
         image_sub = message_filters.Subscriber(
             self, Image, "image_raw", qos_profile=qos_profile_sensor_data)
         detections_sub = message_filters.Subscriber(
@@ -58,7 +65,7 @@ class DebugNode(Node):
         # get detection info
         label = detection.class_name
         score = detection.score
-        box_msg: BoundingBox2D = detection.box
+        box_msg: BoundingBox2D = detection.bbox
         track_id = detection.id
 
         min_pt = (round(box_msg.center.position.x - box_msg.size.x / 2.0),
@@ -122,9 +129,44 @@ class DebugNode(Node):
 
         return cv_image
 
+    def create_marker(self, detection: Detection) -> Marker:
+
+        bbox3d = detection.bbox3d
+
+        marker = Marker()
+        marker.header.frame_id = bbox3d.frame_id
+
+        marker.ns = "yolov8_3d"
+        marker.type = Marker.CUBE
+        marker.action = Marker.ADD
+        marker.frame_locked = False
+
+        marker.pose.position.x = bbox3d.center.position.x
+        marker.pose.position.y = bbox3d.center.position.y
+        marker.pose.position.z = bbox3d.center.position.z
+
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = bbox3d.size.x
+        marker.scale.y = bbox3d.size.y
+        marker.scale.z = bbox3d.size.z
+
+        marker.color.b = 0.0
+        marker.color.g = detection.score * 255.0
+        marker.color.r = (1.0 - detection.score) * 255.0
+        marker.color.a = 0.4
+
+        marker.lifetime = Duration(seconds=1.0).to_msg()
+        marker.text = detection.class_name
+
+        return marker
+
     def detections_cb(self, img_msg: Image, detection_msg: DetectionArray) -> None:
 
         cv_image = self.cv_bridge.imgmsg_to_cv2(img_msg)
+        marker_array = MarkerArray()
 
         detection: Detection
         for detection in detection_msg.detections:
@@ -144,9 +186,16 @@ class DebugNode(Node):
             cv_image = self.draw_mask(cv_image, detection, color)
             cv_image = self.draw_keypoints(cv_image, detection)
 
+            if detection.bbox3d.frame_id:
+                marker = self.create_marker(detection)
+                marker.header.stamp = img_msg.header.stamp
+                marker.id = len(marker_array.markers)
+                marker_array.markers.append(marker)
+
         # publish dbg image
         self._dbg_pub.publish(self.cv_bridge.cv2_to_imgmsg(cv_image,
                                                            encoding=img_msg.encoding))
+        self._markers_pub.publish(marker_array)
 
 
 def main():

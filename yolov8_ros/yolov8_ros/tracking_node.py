@@ -87,10 +87,10 @@ class TrackingNode(Node):
 
             detection_list.append(
                 [
-                    detection.box.center.position.x - detection.box.size.x / 2,
-                    detection.box.center.position.y - detection.box.size.y / 2,
-                    detection.box.center.position.x + detection.box.size.x / 2,
-                    detection.box.center.position.y + detection.box.size.y / 2,
+                    detection.bbox.center.position.x - detection.bbox.size.x / 2,
+                    detection.bbox.center.position.y - detection.bbox.size.y / 2,
+                    detection.bbox.center.position.x + detection.bbox.size.x / 2,
+                    detection.bbox.center.position.y + detection.bbox.size.y / 2,
                     detection.score,
                     detection.class_id
                 ]
@@ -118,10 +118,10 @@ class TrackingNode(Node):
 
                     # get boxes values
                     box = tracked_box.xywh[0]
-                    tracked_detection.box.center.position.x = float(box[0])
-                    tracked_detection.box.center.position.y = float(box[1])
-                    tracked_detection.box.size.x = float(box[2])
-                    tracked_detection.box.size.y = float(box[3])
+                    tracked_detection.bbox.center.position.x = float(box[0])
+                    tracked_detection.bbox.center.position.y = float(box[1])
+                    tracked_detection.bbox.size.x = float(box[2])
+                    tracked_detection.bbox.size.y = float(box[3])
 
                     # get track id
                     track_id = ""

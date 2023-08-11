@@ -18,6 +18,7 @@ import numpy as np
 from typing import Tuple
 
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 
 import rclpy
 from rclpy.node import Node
@@ -60,7 +61,7 @@ class BBox3DNode(Node):
             self, DetectionArray, "detections")
 
         self._synchronizer = message_filters.ApproximateTimeSynchronizer(
-            (self.points_sub, self.detections_sub), 5, 0.5)
+            (self.points_sub, self.detections_sub), 10, 0.5)
         self._synchronizer.registerCallback(self.on_detections)
 
     def transform(self, frame_id: str) -> Tuple[np.ndarray]:
@@ -114,7 +115,7 @@ class BBox3DNode(Node):
 
             if bb3d is not None:
                 new_detections_msg.detections.append(detection)
-                new_detections_msg.detections[-1].box3d = BBox3DNode.transform_3d_box(
+                new_detections_msg.detections[-1].bbox3d = BBox3DNode.transform_3d_box(
                     bb3d, transform[0], transform[1])
 
         self._pub.publish(new_detections_msg)
@@ -124,10 +125,10 @@ class BBox3DNode(Node):
                       detection: Detection
                       ) -> BoundingBox3D:
 
-        center_x = detection.box.center.position.x
-        center_y = detection.box.center.position.y
-        size_x = detection.box.size.x
-        size_y = detection.box.size.y
+        center_x = detection.bbox.center.position.x
+        center_y = detection.bbox.center.position.y
+        size_x = detection.bbox.size.x
+        size_y = detection.bbox.size.y
 
         bb_min_x = int(center_x - size_x / 2.0)
         bb_min_y = int(center_y - size_y / 2.0)
@@ -153,18 +154,21 @@ class BBox3DNode(Node):
             return None
 
         # filter points with clustering
+        pca = PCA(n_components=1)
+        data_pca = pca.fit_transform(masked_points[:, 2].reshape(-1, 1))
         labels = KMeans(
             init="k-means++",
             n_clusters=2,
             n_init="auto",
             max_iter=300,
-            algorithm="lloyd"
-        ).fit_predict(masked_points[:, 2].reshape(-1, 1))
+            algorithm="lloyd",
+            tol=1e-6
+        ).fit_predict(data_pca)
 
         filtered_points = masked_points[labels == 0]
         filtered_points_1 = masked_points[labels == 1]
 
-        if filtered_points_1.size > 0 and np.min(filtered_points) > np.min(filtered_points_1):
+        if filtered_points_1.size > 0 and np.min(filtered_points_1[:, 2]) < np.min(filtered_points[:, 2]):
             filtered_points = filtered_points_1
 
         # max and min
@@ -173,7 +177,7 @@ class BBox3DNode(Node):
         max_z = np.max(filtered_points[:, 2])
 
         min_x = np.min(filtered_points[:, 0])
-        min_y = np.min(masked_points[:, 1])
+        min_y = np.min(filtered_points[:, 1])
         min_z = np.min(filtered_points[:, 2])
 
         # create 3D BB
@@ -184,12 +188,13 @@ class BBox3DNode(Node):
         msg.size.x = float(max_x - min_x)
         msg.size.y = float(max_y - min_y)
         msg.size.z = float(max_z - min_z)
+        msg.frame_id = self.target_frame
 
         return msg
 
     @staticmethod
     def transform_3d_box(
-        box: BoundingBox3D,
+        bbox: BoundingBox3D,
         translation: np.ndarray,
         rotation: np.ndarray
     ) -> BoundingBox3D:
@@ -197,28 +202,28 @@ class BBox3DNode(Node):
         # position
         position = BBox3DNode.qv_mult(
             rotation,
-            np.array([box.center.position.x,
-                      box.center.position.y,
-                      box.center.position.z])
+            np.array([bbox.center.position.x,
+                      bbox.center.position.y,
+                      bbox.center.position.z])
         ) + translation
 
-        box.center.position.x = position[0]
-        box.center.position.y = position[1]
-        box.center.position.z = position[2]
+        bbox.center.position.x = position[0]
+        bbox.center.position.y = position[1]
+        bbox.center.position.z = position[2]
 
         # size
         size = BBox3DNode.qv_mult(
             rotation,
-            np.array([box.size.x,
-                      box.size.y,
-                      box.size.z])
+            np.array([bbox.size.x,
+                      bbox.size.y,
+                      bbox.size.z])
         )
 
-        box.size.x = abs(size[0])
-        box.size.y = abs(size[1])
-        box.size.z = abs(size[2])
+        bbox.size.x = abs(size[0])
+        bbox.size.y = abs(size[1])
+        bbox.size.z = abs(size[2])
 
-        return box
+        return bbox
 
     @staticmethod
     def qv_mult(q: np.ndarray, v: np.ndarray) -> np.ndarray:
