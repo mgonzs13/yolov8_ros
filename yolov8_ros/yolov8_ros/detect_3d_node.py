@@ -38,7 +38,7 @@ from yolov8_msgs.msg import KeyPoint3D
 from yolov8_msgs.msg import KeyPoint3DArray
 
 
-class BBox3DNode(Node):
+class Detect3DNode(Node):
 
     def __init__(self) -> None:
         super().__init__("bbox3d_node")
@@ -92,14 +92,14 @@ class BBox3DNode(Node):
             if bbox3d is not None:
                 new_detections_msg.detections.append(detection)
 
-                bbox3d = BBox3DNode.transform_3d_box(
+                bbox3d = Detect3DNode.transform_3d_box(
                     bbox3d, transform[0], transform[1])
                 bbox3d.frame_id = self.target_frame
                 new_detections_msg.detections[-1].bbox3d = bbox3d
 
                 keypoints3d = self.convert_keypoints_to_3d(
                     points, detection)
-                keypoints3d = BBox3DNode.transform_3d_keypoints(
+                keypoints3d = Detect3DNode.transform_3d_keypoints(
                     keypoints3d, transform[0], transform[1])
                 keypoints3d.frame_id = self.target_frame
                 new_detections_msg.detections[-1].keypoints3d = keypoints3d
@@ -247,7 +247,7 @@ class BBox3DNode(Node):
     ) -> BoundingBox3D:
 
         # position
-        position = BBox3DNode.qv_mult(
+        position = Detect3DNode.qv_mult(
             rotation,
             np.array([bbox.center.position.x,
                       bbox.center.position.y,
@@ -259,7 +259,7 @@ class BBox3DNode(Node):
         bbox.center.position.z = position[2]
 
         # size
-        size = BBox3DNode.qv_mult(
+        size = Detect3DNode.qv_mult(
             rotation,
             np.array([bbox.size.x,
                       bbox.size.y,
@@ -280,7 +280,7 @@ class BBox3DNode(Node):
     ) -> KeyPoint3DArray:
 
         for point in keypoints.data:
-            position = BBox3DNode.qv_mult(
+            position = Detect3DNode.qv_mult(
                 rotation,
                 np.array([
                     point.point.x,
@@ -307,5 +307,5 @@ class BBox3DNode(Node):
 
 def main():
     rclpy.init()
-    rclpy.spin(BBox3DNode())
+    rclpy.spin(Detect3DNode())
     rclpy.shutdown()
