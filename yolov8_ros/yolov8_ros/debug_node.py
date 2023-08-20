@@ -161,7 +161,7 @@ class DebugNode(Node):
         marker.color.r = (1.0 - detection.score) * 255.0
         marker.color.a = 0.4
 
-        marker.lifetime = Duration(seconds=1.0).to_msg()
+        marker.lifetime = Duration(seconds=0.5).to_msg()
         marker.text = detection.class_name
 
         return marker
@@ -192,7 +192,7 @@ class DebugNode(Node):
         marker.color.r = (1.0 - keypoint.score) * 255.0
         marker.color.a = 0.4
 
-        marker.lifetime = Duration(seconds=1.0).to_msg()
+        marker.lifetime = Duration(seconds=0.5).to_msg()
         marker.text = str(keypoint.id)
 
         return marker

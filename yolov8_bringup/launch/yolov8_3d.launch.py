@@ -73,6 +73,13 @@ def generate_launch_description():
         default_value="base_link",
         description="Target frame to transform the 3D boxes")
 
+    maximum_detection_threshold = LaunchConfiguration(
+        "maximum_detection_threshold")
+    maximum_detection_threshold_cmd = DeclareLaunchArgument(
+        "maximum_detection_threshold",
+        default_value="0.3",
+        description="Maximum detection threshold in the z axi")
+
     namespace = LaunchConfiguration("namespace")
     namespace_cmd = DeclareLaunchArgument(
         "namespace",
@@ -108,7 +115,8 @@ def generate_launch_description():
         executable="detect_3d_node",
         name="detect_3d_node",
         namespace=namespace,
-        parameters=[{"target_frame": target_frame}],
+        parameters=[{"target_frame": target_frame},
+                    {"maximum_detection_threshold", maximum_detection_threshold}],
         remappings=[("points", input_points_topic),
                     ("detections", "tracking")]
     )
@@ -132,6 +140,7 @@ def generate_launch_description():
     ld.add_action(input_image_topic_cmd)
     ld.add_action(input_points_topic_cmd)
     ld.add_action(target_frame_cmd)
+    ld.add_action(maximum_detection_threshold_cmd)
     ld.add_action(namespace_cmd)
 
     ld.add_action(detector_node_cmd)
