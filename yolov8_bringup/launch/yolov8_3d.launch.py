@@ -61,6 +61,25 @@ def generate_launch_description():
         default_value="/camera/rgb/image_raw",
         description="Name of the input image topic")
 
+    input_points_topic = LaunchConfiguration("input_points_topic")
+    input_points_topic_cmd = DeclareLaunchArgument(
+        "input_points_topic",
+        default_value="/camera/depth_registered/points",
+        description="Name of the input points topic")
+
+    target_frame = LaunchConfiguration("target_frame")
+    target_frame_cmd = DeclareLaunchArgument(
+        "target_frame",
+        default_value="base_link",
+        description="Target frame to transform the 3D boxes")
+
+    maximum_detection_threshold = LaunchConfiguration(
+        "maximum_detection_threshold")
+    maximum_detection_threshold_cmd = DeclareLaunchArgument(
+        "maximum_detection_threshold",
+        default_value="0.3",
+        description="Maximum detection threshold in the z axi")
+
     namespace = LaunchConfiguration("namespace")
     namespace_cmd = DeclareLaunchArgument(
         "namespace",
@@ -91,13 +110,24 @@ def generate_launch_description():
         remappings=[("image_raw", input_image_topic)]
     )
 
+    detect_3d_node_cmd = Node(
+        package="yolov8_ros",
+        executable="detect_3d_node",
+        name="detect_3d_node",
+        namespace=namespace,
+        parameters=[{"target_frame": target_frame},
+                    {"maximum_detection_threshold", maximum_detection_threshold}],
+        remappings=[("points", input_points_topic),
+                    ("detections", "tracking")]
+    )
+
     debug_node_cmd = Node(
         package="yolov8_ros",
         executable="debug_node",
         name="debug_node",
         namespace=namespace,
         remappings=[("image_raw", input_image_topic),
-                    ("detections", "tracking")]
+                    ("detections", "detections_3d")]
     )
 
     ld = LaunchDescription()
@@ -108,10 +138,14 @@ def generate_launch_description():
     ld.add_action(enable_cmd)
     ld.add_action(threshold_cmd)
     ld.add_action(input_image_topic_cmd)
+    ld.add_action(input_points_topic_cmd)
+    ld.add_action(target_frame_cmd)
+    ld.add_action(maximum_detection_threshold_cmd)
     ld.add_action(namespace_cmd)
 
     ld.add_action(detector_node_cmd)
     ld.add_action(tracking_node_cmd)
+    ld.add_action(detect_3d_node_cmd)
     ld.add_action(debug_node_cmd)
 
     return ld
