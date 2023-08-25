@@ -52,10 +52,10 @@ class Detect3DNode(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        # pub
+        # pubs
         self._pub = self.create_publisher(DetectionArray, "detections_3d", 10)
 
-        # subscribers
+        # subs
         self.points_sub = message_filters.Subscriber(
             self, PointCloud2, "points",
             qos_profile=qos_profile_sensor_data)

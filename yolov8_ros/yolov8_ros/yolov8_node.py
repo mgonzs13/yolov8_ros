@@ -65,8 +65,10 @@ class Yolov8Node(Node):
         self.yolo = YOLO(model)
         self.yolo.fuse()
 
-        # topics
+        # pubs
         self._pub = self.create_publisher(DetectionArray, "detections", 10)
+
+        # subs
         self._sub = self.create_subscription(
             Image, "image_raw", self.image_cb,
             qos_profile_sensor_data

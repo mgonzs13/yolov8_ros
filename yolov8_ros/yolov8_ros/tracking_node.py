@@ -47,9 +47,10 @@ class TrackingNode(Node):
         self.cv_bridge = CvBridge()
         self.tracker = self.create_tracker(tracker)
 
-        # topcis
+        # pubs
         self._pub = self.create_publisher(DetectionArray, "tracking", 10)
 
+        # subs
         image_sub = message_filters.Subscriber(
             self, Image, "image_raw", qos_profile=qos_profile_sensor_data)
         detections_sub = message_filters.Subscriber(
