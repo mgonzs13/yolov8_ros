@@ -63,7 +63,7 @@ class DebugNode(Node):
             (image_sub, detections_sub), 10, 0.5)
         self._synchronizer.registerCallback(self.detections_cb)
 
-    def draw_box(self, cv_image: cv2.Mat, detection: Detection, color: Tuple[int]) -> cv2.Mat:
+    def draw_box(self, cv_image: np.array, detection: Detection, color: Tuple[int]) -> np.array:
 
         # get detection info
         label = detection.class_name
@@ -88,7 +88,7 @@ class DebugNode(Node):
 
         return cv_image
 
-    def draw_mask(self, cv_image: cv2.Mat, detection: Detection, color: Tuple[int]) -> cv2.Mat:
+    def draw_mask(self, cv_image: np.array, detection: Detection, color: Tuple[int]) -> np.array:
 
         mask_msg = detection.mask
         mask_array = np.array([[int(ele.x), int(ele.y)]
@@ -102,7 +102,7 @@ class DebugNode(Node):
                                      color=color, thickness=2, lineType=cv2.LINE_AA)
         return cv_image
 
-    def draw_keypoints(self, cv_image: cv2.Mat, detection: Detection) -> cv2.Mat:
+    def draw_keypoints(self, cv_image: np.array, detection: Detection) -> np.array:
 
         keypoints_msg = detection.keypoints
 
