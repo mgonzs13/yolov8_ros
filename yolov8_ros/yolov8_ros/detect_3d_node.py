@@ -110,7 +110,8 @@ class Detect3DNode(Node):
         self._pub.publish(new_detections_msg)
 
         t2 = time.time()
-        self.get_logger().info(f"on_detect per detection: {(t2 - t1) * 1000:.1f}ms")
+        with open('timings.txt', "a") as file:
+            file.write(f"{(t2 - t1) * 1000:.1f}" + "\n")
 
     def convert_bb_to_3d(self,
                          points: np.ndarray,
