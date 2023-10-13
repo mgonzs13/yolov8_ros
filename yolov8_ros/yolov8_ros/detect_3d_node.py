@@ -14,6 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import time
 import numpy as np
 from typing import Tuple
 
@@ -74,6 +75,8 @@ class Detect3DNode(Node):
         # check if there are detections
         if not detections_msg.detections:
             return
+        
+        t1 = time.time()
 
         transform = self.get_transform(points_msg.header.frame_id)
 
@@ -105,6 +108,9 @@ class Detect3DNode(Node):
                 new_detections_msg.detections[-1].keypoints3d = keypoints3d
 
         self._pub.publish(new_detections_msg)
+
+        t2 = time.time()
+        self.get_logger().info(f"on_detect: {(t2 - t1) * 1000:0d}ms")
 
     def convert_bb_to_3d(self,
                          points: np.ndarray,
