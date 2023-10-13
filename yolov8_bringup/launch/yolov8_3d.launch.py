@@ -15,9 +15,9 @@
 
 
 from launch import LaunchDescription
-from launch_ros.actions import Node
-from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -60,12 +60,18 @@ def generate_launch_description():
         "input_image_topic",
         default_value="/camera/rgb/image_raw",
         description="Name of the input image topic")
-
-    input_points_topic = LaunchConfiguration("input_points_topic")
-    input_points_topic_cmd = DeclareLaunchArgument(
-        "input_points_topic",
-        default_value="/camera/depth_registered/points",
-        description="Name of the input points topic")
+    
+    input_depth_topic = LaunchConfiguration("input_depth_topic")
+    input_depth_topic_cmd = DeclareLaunchArgument(
+        "input_depth_topic",
+        default_value="/camera/aligned_depth_to_color/image_raw",
+        description="Name of the input depth topic")
+    
+    input_depth_info_topic = LaunchConfiguration("input_depth_info_topic")
+    input_depth_info_topic_cmd = DeclareLaunchArgument(
+        "input_depth_info_topic",
+        default_value="/camera/aligned_depth_to_color/camera_info",
+        description="Name of the input depth info topic")
 
     target_frame = LaunchConfiguration("target_frame")
     target_frame_cmd = DeclareLaunchArgument(
@@ -117,7 +123,8 @@ def generate_launch_description():
         namespace=namespace,
         parameters=[{"target_frame": target_frame},
                     {"maximum_detection_threshold", maximum_detection_threshold}],
-        remappings=[("points", input_points_topic),
+        remappings=[("depth_image", input_depth_topic),
+                    ("depth_info", input_depth_info_topic),
                     ("detections", "tracking")]
     )
 
@@ -138,7 +145,8 @@ def generate_launch_description():
     ld.add_action(enable_cmd)
     ld.add_action(threshold_cmd)
     ld.add_action(input_image_topic_cmd)
-    ld.add_action(input_points_topic_cmd)
+    ld.add_action(input_depth_topic_cmd)
+    ld.add_action(input_depth_info_topic_cmd)
     ld.add_action(target_frame_cmd)
     ld.add_action(maximum_detection_threshold_cmd)
     ld.add_action(namespace_cmd)

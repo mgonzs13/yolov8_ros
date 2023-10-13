@@ -14,26 +14,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from math import isnan
 import time
-import numpy as np
 from typing import Tuple
 
+import cv2
+import message_filters
+import numpy as np
 import rclpy
+from cv_bridge import CvBridge
+from geometry_msgs.msg import TransformStamped
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
-
-import message_filters
+from sensor_msgs.msg import CameraInfo, Image
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
-from sensor_msgs.msg import PointCloud2
-from geometry_msgs.msg import TransformStamped
-from yolov8_msgs.msg import Detection
-from yolov8_msgs.msg import DetectionArray
-from yolov8_msgs.msg import BoundingBox3D
-from yolov8_msgs.msg import KeyPoint3D
-from yolov8_msgs.msg import KeyPoint3DArray
+from yolov8_msgs.msg import (BoundingBox3D, Detection, DetectionArray,
+                             KeyPoint3D, KeyPoint3DArray)
 
 
 class Detect3DNode(Node):
@@ -52,45 +51,51 @@ class Detect3DNode(Node):
         # aux
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
+        self.cv_bridge = CvBridge()
 
         # pubs
         self._pub = self.create_publisher(DetectionArray, "detections_3d", 10)
 
         # subs
-        self.points_sub = message_filters.Subscriber(
-            self, PointCloud2, "points",
+        self.depth_sub = message_filters.Subscriber(
+            self, Image, "depth_image",
+            qos_profile=qos_profile_sensor_data)
+        self.depth_info_sub = message_filters.Subscriber(
+            self, CameraInfo, "depth_info",
             qos_profile=qos_profile_sensor_data)
         self.detections_sub = message_filters.Subscriber(
             self, DetectionArray, "detections")
 
         self._synchronizer = message_filters.ApproximateTimeSynchronizer(
-            (self.points_sub, self.detections_sub), 10, 0.5)
+            (self.depth_sub, self.depth_info_sub, self.detections_sub), 10, 0.5)
         self._synchronizer.registerCallback(self.on_detections)
 
     def on_detections(self,
-                      points_msg: PointCloud2,
+                      depth_msg: Image,
+                      depth_info_msg: CameraInfo,
                       detections_msg: DetectionArray,
                       ) -> None:
 
+        t1 = time.time()
+        
         # check if there are detections
         if not detections_msg.detections:
             return
-        
-        t1 = time.time()
 
-        transform = self.get_transform(points_msg.header.frame_id)
+        transform = self.get_transform(depth_info_msg.header.frame_id)
 
         if transform is None:
             return
 
-        points = np.frombuffer(points_msg.data, np.float32).reshape(
-            points_msg.height, points_msg.width, -1)[:, :, :3]
+        depth_image = self.cv_bridge.imgmsg_to_cv2(depth_msg)
+        # TODO: Scale depth image to same resolution of colour image in there's a mismatch image?
 
         new_detections_msg = DetectionArray()
         new_detections_msg.header = detections_msg.header
 
         for detection in detections_msg.detections:
-            bbox3d = self.convert_bb_to_3d(points, detection)
+            bbox3d = self.convert_bb_to_3d(
+                depth_image, depth_info_msg, detection)
 
             if bbox3d is not None:
                 new_detections_msg.detections.append(detection)
@@ -100,12 +105,13 @@ class Detect3DNode(Node):
                 bbox3d.frame_id = self.target_frame
                 new_detections_msg.detections[-1].bbox3d = bbox3d
 
-                keypoints3d = self.convert_keypoints_to_3d(
-                    points, detection)
-                keypoints3d = Detect3DNode.transform_3d_keypoints(
-                    keypoints3d, transform[0], transform[1])
-                keypoints3d.frame_id = self.target_frame
-                new_detections_msg.detections[-1].keypoints3d = keypoints3d
+                if detection.keypoints.data:
+                    keypoints3d = self.convert_keypoints_to_3d(
+                        depth_image, depth_info_msg, detection)
+                    keypoints3d = Detect3DNode.transform_3d_keypoints(
+                        keypoints3d, transform[0], transform[1])
+                    keypoints3d.frame_id = self.target_frame
+                    new_detections_msg.detections[-1].keypoints3d = keypoints3d
 
         self._pub.publish(new_detections_msg)
 
@@ -114,100 +120,98 @@ class Detect3DNode(Node):
             file.write(f"{(t2 - t1) * 1000:.1f}" + "\n")
 
     def convert_bb_to_3d(self,
-                         points: np.ndarray,
+                         depth_image: np.ndarray,
+                         depth_info: CameraInfo,
                          detection: Detection
                          ) -> BoundingBox3D:
 
-        if detection.mask.data:
-            detection_mask_x = np.array(
-                [point.x for point in detection.mask.data])
-            detection_mask_y = np.array(
-                [point.y for point in detection.mask.data])
+        center_x = int(detection.bbox.center.position.x)
+        center_y = int(detection.bbox.center.position.y)
+        size_x = int(detection.bbox.size.x)
+        size_y = int(detection.bbox.size.y)
 
-            bb_min_x = int(np.min(detection_mask_x))
-            bb_min_y = int(np.min(detection_mask_y))
-            bb_max_x = int(np.max(detection_mask_x))
-            bb_max_y = int(np.max(detection_mask_y))
+        # if detection.mask.data:  # convert mask points to binary mask
+        #     detection_mask_x = np.array(
+        #         [point.x for point in detection.mask.data])
+        #     detection_mask_y = np.array(
+        #         [point.y for point in detection.mask.data])
 
-            center_x = (bb_min_x + bb_max_x) / 2
-            center_y = (bb_min_y + bb_max_y) / 2
+        #     mask_points = np.vstack([detection_mask_x.astype(np.int32), detection_mask_y.astype(np.int32)]).T
+        #     mask = cv2.fillConvexPoly(np.zeros(depth_image.shape), mask_points, 255, 1)
 
-        else:
-            center_x = detection.bbox.center.position.x
-            center_y = detection.bbox.center.position.y
-            size_x = detection.bbox.size.x
-            size_y = detection.bbox.size.y
+        # else:  # convert bbox to binary mask
+        p1 = (center_x - size_x // 2, center_y - size_y // 2)
+        p2 = (center_x + size_x // 2, center_y + size_y // 2)
+        mask = cv2.rectangle(np.zeros(depth_image.shape), p1, p2, 255, -1)
 
-            bb_min_x = int(center_x - size_x / 2.0)
-            bb_min_y = int(center_y - size_y / 2.0)
-            bb_max_x = int(center_x + size_x / 2.0)
-            bb_max_y = int(center_y + size_y / 2.0)
+        # apply mask to depth_image and find median Z coord and bounding box depth
+        depth_mask = cv2.bitwise_and(depth_image, depth_image, mask=mask.astype(np.int8))
+        depth_mask_no_zeros = np.where(depth_mask.astype(np.uint16) > 0, depth_mask, np.nan) / 1000
+        
+        
+        # find z position and 3d bbox depth 
+        # if detection.mask.data:
+        #     try:
+        #         # TODO: Try prevent RuntimeWarning: All-NaN slice encountered rather than catching
+        #         z = np.nanmedian(depth_mask_no_zeros)
+        #         d = 3 * np.nanstd(depth_mask_no_zeros)
+        #     except RuntimeWarning:
+        #         return None
+        # else: 
+        z = float(depth_mask_no_zeros[center_y, center_x])
+        # d = min(np.nanstd(depth_mask_no_zeros), 2 * self.maximum_detection_threshold)
+        d = 2 * self.maximum_detection_threshold
+            
+        # project central points
+        k = depth_info.k
+        px, py, fx, fy = k[2], k[5], k[0], k[4]
+        x = z * (center_x - px) / fx
+        y = z * (center_y - py) / fy
 
-        # masks for limiting the pc using bounding box
-        mask_y = np.logical_and(
-            bb_min_y <= np.arange(points.shape[0]),
-            bb_max_y >= np.arange(points.shape[0])
-        )
-        mask_x = np.logical_and(
-            bb_min_x <= np.arange(points.shape[1]),
-            bb_max_x >= np.arange(points.shape[1])
-        )
-        mask = np.ix_(mask_y, mask_x)
-        masked_points = points[mask].reshape(-1, 3)
-
-        # maximum_detection_threshold
-        center_point = points[int(center_y)][int(center_x)]
-        z_diff = np.abs(masked_points[:, 2] - center_point[2])
-        mask_z = z_diff <= self.maximum_detection_threshold
-        masked_points = masked_points[mask_z]
-
-        # remove nan
-        filtered_points = masked_points[~np.isnan(masked_points).any(axis=1)]
-
-        if masked_points.shape[0] < 2:
-            return None
-
-        # max and min
-        max_x = np.max(filtered_points[:, 0])
-        max_y = np.max(filtered_points[:, 1])
-        max_z = np.max(filtered_points[:, 2])
-
-        min_x = np.min(filtered_points[:, 0])
-        min_y = np.min(filtered_points[:, 1])
-        min_z = np.min(filtered_points[:, 2])
+        # find bbox width and height in world space
+        w = z * (size_x / fx)
+        h = z * (size_y / fy)
 
         # create 3D BB
         msg = BoundingBox3D()
-        msg.center.position.x = float((max_x + min_x) / 2)
-        msg.center.position.y = float((max_y + min_y) / 2)
-        msg.center.position.z = float((max_z + min_z) / 2)
-        msg.size.x = float(max_x - min_x)
-        msg.size.y = float(max_y - min_y)
-        msg.size.z = float(max_z - min_z)
+        msg.center.position.x = x
+        msg.center.position.y = y
+        msg.center.position.z = z
+        msg.size.x = w
+        msg.size.y = h
+        msg.size.z = d
 
         return msg
 
     def convert_keypoints_to_3d(self,
-                                points: np.ndarray,
+                                depth_image: np.ndarray,
+                                depth_info: CameraInfo,
                                 detection: Detection
                                 ) -> KeyPoint3DArray:
 
+        # Build an array of 2d keypoints
+        keypoints_2d = np.array([[p.point.x, p.point.y] for p in detection.keypoints.data])
+        u = np.array(keypoints_2d[:, 1]).clip(0, depth_info.height - 1).astype(np.int16)
+        v = np.array(keypoints_2d[:, 0]).clip(0, depth_info.width - 1).astype(np.int16)
+
+        # sample depth image and project to 3D
+        z = depth_image[u, v]
+        k = depth_info.k
+        px, py, fx, fy = k[2], k[5], k[0], k[4]
+        x = z * (v - px) / fx
+        y = z * (u - py) / fy
+        points_3d = np.dstack([x, y, z]).reshape(-1, 3) / 1000  # convert to meters
+
+        # generate message
         msg_array = KeyPoint3DArray()
-
-        for p in detection.keypoints.data:
-
-            if int(p.point.y) >= points.shape[0] or int(p.point.x) >= points.shape[1]:
-                continue
-
-            p3d = points[int(p.point.y)][int(p.point.x)]
-
-            if not np.isnan(p3d).any():
+        for p, d in zip(points_3d, detection.keypoints.data):
+            if not np.isnan(p).any():
                 msg = KeyPoint3D()
-                msg.point.x = float(p3d[0])
-                msg.point.y = float(p3d[1])
-                msg.point.z = float(p3d[2])
-                msg.id = p.id
-                msg.score = p.score
+                msg.point.x = p[0]
+                msg.point.y = p[1]
+                msg.point.z = p[2]
+                msg.id = d.id
+                msg.score = d.score
                 msg_array.data.append(msg)
 
         return msg_array
