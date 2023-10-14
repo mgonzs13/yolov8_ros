@@ -13,12 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
-from math import isnan
 import time
 from typing import Tuple
 
-import cv2
 import message_filters
 import numpy as np
 import rclpy
@@ -88,8 +85,6 @@ class Detect3DNode(Node):
             return
 
         depth_image = self.cv_bridge.imgmsg_to_cv2(depth_msg)
-        # TODO: Scale depth image to same resolution of colour image in there's a mismatch image?
-
         new_detections_msg = DetectionArray()
         new_detections_msg.header = detections_msg.header
 
@@ -116,7 +111,7 @@ class Detect3DNode(Node):
         self._pub.publish(new_detections_msg)
 
         t2 = time.time()
-        with open('timings.txt', "a") as file:
+        with open('timings.txt', "a+") as file:
             file.write(f"{(t2 - t1) * 1000:.1f}" + "\n")
 
     def convert_bb_to_3d(self,
@@ -125,50 +120,32 @@ class Detect3DNode(Node):
                          detection: Detection
                          ) -> BoundingBox3D:
 
+        # crop depth image by the 2d BB
         center_x = int(detection.bbox.center.position.x)
         center_y = int(detection.bbox.center.position.y)
         size_x = int(detection.bbox.size.x)
         size_y = int(detection.bbox.size.y)
+        u_min, u_max = max(center_x - size_x // 2, 0), min(center_x + size_x // 2, depth_image.shape[1] - 1)
+        v_min, v_max = max(center_y - size_y // 2, 0), min(center_y + size_y // 2, depth_image.shape[0] - 1)
+        roi = depth_image[v_min:v_max, u_min:u_max] / 1000  # convert to meters
+        if not np.any(roi):
+            return None
 
-        # if detection.mask.data:  # convert mask points to binary mask
-        #     detection_mask_x = np.array(
-        #         [point.x for point in detection.mask.data])
-        #     detection_mask_y = np.array(
-        #         [point.y for point in detection.mask.data])
-
-        #     mask_points = np.vstack([detection_mask_x.astype(np.int32), detection_mask_y.astype(np.int32)]).T
-        #     mask = cv2.fillConvexPoly(np.zeros(depth_image.shape), mask_points, 255, 1)
-
-        # else:  # convert bbox to binary mask
-        p1 = (center_x - size_x // 2, center_y - size_y // 2)
-        p2 = (center_x + size_x // 2, center_y + size_y // 2)
-        mask = cv2.rectangle(np.zeros(depth_image.shape), p1, p2, 255, -1)
-
-        # apply mask to depth_image and find median Z coord and bounding box depth
-        depth_mask = cv2.bitwise_and(depth_image, depth_image, mask=mask.astype(np.int8))
-        depth_mask_no_zeros = np.where(depth_mask.astype(np.uint16) > 0, depth_mask, np.nan) / 1000
-        
-        
-        # find z position and 3d bbox depth 
-        # if detection.mask.data:
-        #     try:
-        #         # TODO: Try prevent RuntimeWarning: All-NaN slice encountered rather than catching
-        #         z = np.nanmedian(depth_mask_no_zeros)
-        #         d = 3 * np.nanstd(depth_mask_no_zeros)
-        #     except RuntimeWarning:
-        #         return None
-        # else: 
-        z = float(depth_mask_no_zeros[center_y, center_x])
-        # d = min(np.nanstd(depth_mask_no_zeros), 2 * self.maximum_detection_threshold)
-        d = 2 * self.maximum_detection_threshold
+        # find the z coordinate on the 3D BB
+        z_mean = np.nanmean(np.where(roi == 0, np.nan, roi))
+        z_diff = np.abs(roi - z_mean)
+        mask_z = z_diff <= self.maximum_detection_threshold
+        if not np.any(mask_z):
+            return None
+        roi_threshold = roi[mask_z]
+        z_min, z_max = np.min(roi_threshold), np.max(roi_threshold)
+        z = (z_max + z_min) / 2 
             
-        # project central points
+        # project from image to world space
         k = depth_info.k
         px, py, fx, fy = k[2], k[5], k[0], k[4]
         x = z * (center_x - px) / fx
         y = z * (center_y - py) / fy
-
-        # find bbox width and height in world space
         w = z * (size_x / fx)
         h = z * (size_y / fy)
 
@@ -179,7 +156,7 @@ class Detect3DNode(Node):
         msg.center.position.z = z
         msg.size.x = w
         msg.size.y = h
-        msg.size.z = d
+        msg.size.z = (z_max - z_min)
 
         return msg
 
@@ -190,9 +167,9 @@ class Detect3DNode(Node):
                                 ) -> KeyPoint3DArray:
 
         # Build an array of 2d keypoints
-        keypoints_2d = np.array([[p.point.x, p.point.y] for p in detection.keypoints.data])
-        u = np.array(keypoints_2d[:, 1]).clip(0, depth_info.height - 1).astype(np.int16)
-        v = np.array(keypoints_2d[:, 0]).clip(0, depth_info.width - 1).astype(np.int16)
+        keypoints_2d = np.array([[p.point.x, p.point.y] for p in detection.keypoints.data], dtype=np.int16)
+        u = np.array(keypoints_2d[:, 1]).clip(0, depth_info.height - 1)
+        v = np.array(keypoints_2d[:, 0]).clip(0, depth_info.width - 1)
 
         # sample depth image and project to 3D
         z = depth_image[u, v]
