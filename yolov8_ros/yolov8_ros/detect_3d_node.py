@@ -44,6 +44,9 @@ class Detect3DNode(Node):
         self.declare_parameter("maximum_detection_threshold", 0.3)
         self.maximum_detection_threshold = self.get_parameter(
             "maximum_detection_threshold").get_parameter_value().double_value
+        self.declare_parameter("depth_image_units_divisor", 1000)
+        self.depth_image_units_divisor = self.get_parameter(
+            "depth_image_units_divisor").get_parameter_value().integer_value
 
         # aux
         self.tf_buffer = Buffer()
@@ -127,9 +130,10 @@ class Detect3DNode(Node):
         size_y = int(detection.bbox.size.y)
         u_min, u_max = max(center_x - size_x // 2, 0), min(center_x + size_x // 2, depth_image.shape[1] - 1)
         v_min, v_max = max(center_y - size_y // 2, 0), min(center_y + size_y // 2, depth_image.shape[0] - 1)
-        roi = depth_image[v_min:v_max, u_min:u_max] / 1000  # convert to meters
+        roi = depth_image[v_min:v_max, u_min:u_max] / self.depth_image_units_divisor  # convert to meters
         if not np.any(roi):
             return None
+        self.get_logger().info(f"{self.depth_image_units_divisor = }")
 
         # find the z coordinate on the 3D BB
         z_mean = np.nanmean(np.where(roi == 0, np.nan, roi))
@@ -177,7 +181,7 @@ class Detect3DNode(Node):
         px, py, fx, fy = k[2], k[5], k[0], k[4]
         x = z * (v - px) / fx
         y = z * (u - py) / fy
-        points_3d = np.dstack([x, y, z]).reshape(-1, 3) / 1000  # convert to meters
+        points_3d = np.dstack([x, y, z]).reshape(-1, 3) / self.depth_image_units_divisor  # convert to meters
 
         # generate message
         msg_array = KeyPoint3DArray()

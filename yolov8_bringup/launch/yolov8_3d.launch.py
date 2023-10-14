@@ -47,7 +47,7 @@ def generate_launch_description():
     enable_cmd = DeclareLaunchArgument(
         "enable",
         default_value="True",
-        description="Wheter to start darknet enabled")
+        description="Whether to start darknet enabled")
 
     threshold = LaunchConfiguration("threshold")
     threshold_cmd = DeclareLaunchArgument(
@@ -72,6 +72,12 @@ def generate_launch_description():
         "input_depth_info_topic",
         default_value="/camera/aligned_depth_to_color/camera_info",
         description="Name of the input depth info topic")
+    
+    depth_image_units_divisor = LaunchConfiguration("depth_image_units_divisor")
+    depth_image_units_divisor_cmd = DeclareLaunchArgument(
+        "depth_image_units_divisor",
+        default_value='1000',
+        description="Divisor used to convert the raw depth image values into metres")
 
     target_frame = LaunchConfiguration("target_frame")
     target_frame_cmd = DeclareLaunchArgument(
@@ -84,7 +90,7 @@ def generate_launch_description():
     maximum_detection_threshold_cmd = DeclareLaunchArgument(
         "maximum_detection_threshold",
         default_value="0.3",
-        description="Maximum detection threshold in the z axi")
+        description="Maximum detection threshold in the z axis")
 
     namespace = LaunchConfiguration("namespace")
     namespace_cmd = DeclareLaunchArgument(
@@ -122,7 +128,8 @@ def generate_launch_description():
         name="detect_3d_node",
         namespace=namespace,
         parameters=[{"target_frame": target_frame},
-                    {"maximum_detection_threshold", maximum_detection_threshold}],
+                    {"maximum_detection_threshold", maximum_detection_threshold},
+                    {"depth_image_units_divisor", depth_image_units_divisor}],
         remappings=[("depth_image", input_depth_topic),
                     ("depth_info", input_depth_info_topic),
                     ("detections", "tracking")]
@@ -147,6 +154,7 @@ def generate_launch_description():
     ld.add_action(input_image_topic_cmd)
     ld.add_action(input_depth_topic_cmd)
     ld.add_action(input_depth_info_topic_cmd)
+    ld.add_action(depth_image_units_divisor_cmd)
     ld.add_action(target_frame_cmd)
     ld.add_action(maximum_detection_threshold_cmd)
     ld.add_action(namespace_cmd)
