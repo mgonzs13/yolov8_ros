@@ -133,7 +133,6 @@ class Detect3DNode(Node):
         roi = depth_image[v_min:v_max, u_min:u_max] / self.depth_image_units_divisor  # convert to meters
         if not np.any(roi):
             return None
-        self.get_logger().info(f"{self.depth_image_units_divisor = }")
 
         # find the z coordinate on the 3D BB
         z_mean = np.nanmean(np.where(roi == 0, np.nan, roi))

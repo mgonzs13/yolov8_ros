@@ -76,7 +76,7 @@ def generate_launch_description():
     depth_image_units_divisor = LaunchConfiguration("depth_image_units_divisor")
     depth_image_units_divisor_cmd = DeclareLaunchArgument(
         "depth_image_units_divisor",
-        default_value='1000',
+        default_value="1000",
         description="Divisor used to convert the raw depth image values into metres")
 
     target_frame = LaunchConfiguration("target_frame")
@@ -127,9 +127,9 @@ def generate_launch_description():
         executable="detect_3d_node",
         name="detect_3d_node",
         namespace=namespace,
-        parameters=[{"target_frame": target_frame},
-                    {"maximum_detection_threshold", maximum_detection_threshold},
-                    {"depth_image_units_divisor", depth_image_units_divisor}],
+        parameters=[{"target_frame": target_frame,
+                     "maximum_detection_threshold": maximum_detection_threshold,
+                     "depth_image_units_divisor": depth_image_units_divisor}],
         remappings=[("depth_image", input_depth_topic),
                     ("depth_info", input_depth_info_topic),
                     ("detections", "tracking")]
