@@ -76,8 +76,6 @@ class Detect3DNode(Node):
                       detections_msg: DetectionArray,
                       ) -> None:
 
-        t1 = time.time()
-        
         # check if there are detections
         if not detections_msg.detections:
             return
@@ -113,10 +111,6 @@ class Detect3DNode(Node):
 
         self._pub.publish(new_detections_msg)
 
-        t2 = time.time()
-        with open('timings.txt', "a+") as file:
-            file.write(f"{(t2 - t1) * 1000:.1f}" + "\n")
-
     def convert_bb_to_3d(self,
                          depth_image: np.ndarray,
                          depth_info: CameraInfo,
@@ -142,8 +136,8 @@ class Detect3DNode(Node):
             return None
         roi_threshold = roi[mask_z]
         z_min, z_max = np.min(roi_threshold), np.max(roi_threshold)
-        z = (z_max + z_min) / 2 
-            
+        z = (z_max + z_min) / 2
+
         # project from image to world space
         k = depth_info.k
         px, py, fx, fy = k[2], k[5], k[0], k[4]
@@ -169,7 +163,7 @@ class Detect3DNode(Node):
                                 detection: Detection
                                 ) -> KeyPoint3DArray:
 
-        # Build an array of 2d keypoints
+        # build an array of 2d keypoints
         keypoints_2d = np.array([[p.point.x, p.point.y] for p in detection.keypoints.data], dtype=np.int16)
         u = np.array(keypoints_2d[:, 1]).clip(0, depth_info.height - 1)
         v = np.array(keypoints_2d[:, 0]).clip(0, depth_info.width - 1)
