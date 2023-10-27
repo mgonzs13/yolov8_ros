@@ -64,13 +64,13 @@ def generate_launch_description():
     input_depth_topic = LaunchConfiguration("input_depth_topic")
     input_depth_topic_cmd = DeclareLaunchArgument(
         "input_depth_topic",
-        default_value="/camera/aligned_depth_to_color/image_raw",
+        default_value="/camera/depth/image_raw",
         description="Name of the input depth topic")
 
     input_depth_info_topic = LaunchConfiguration("input_depth_info_topic")
     input_depth_info_topic_cmd = DeclareLaunchArgument(
         "input_depth_info_topic",
-        default_value="/camera/aligned_depth_to_color/camera_info",
+        default_value="/camera/depth/camera_info",
         description="Name of the input depth info topic")
 
     depth_image_units_divisor = LaunchConfiguration(
