@@ -162,6 +162,8 @@ class Detect3DNode(Node):
         roi_threshold = roi[mask_z]
         z_min, z_max = np.min(roi_threshold), np.max(roi_threshold)
         z = (z_max + z_min) / 2
+        if z == 0:
+            return None
 
         # project from image to world space
         k = depth_info.k

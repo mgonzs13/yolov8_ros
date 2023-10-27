@@ -23,12 +23,12 @@ $ ros2 launch yolov8_bringup yolov8.launch.py
 
 #### Parameters
 
-- model: YOLOv8 model (default: yolov8m.pt)
-- tracker: tracker file (default: bytetrack.yaml)
-- device: GPU/CUDA (default: cuda:0)
-- enable: wether to start YOLOv8 enabled (default: True)
-- threshold: detection threshold (default: 0.5)
-- input_image_topic: camera topic of RGB images (default: /camera/rgb/image_raw)
+- **model**: YOLOv8 model (default: yolov8m.pt)
+- **tracker**: tracker file (default: bytetrack.yaml)
+- **device**: GPU/CUDA (default: cuda:0)
+- **enable**: wether to start YOLOv8 enabled (default: True)
+- **threshold**: detection threshold (default: 0.5)
+- **input_image_topic**: camera topic of RGB images (default: /camera/rgb/image_raw)
 
 ### YOLOv8 3D
 
@@ -38,17 +38,17 @@ $ ros2 launch yolov8_bringup yolov8_3d.launch.py
 
 #### Parameters
 
-- model: YOLOv8 model (default: yolov8m.pt)
-- tracker: tracker file (default: bytetrack.yaml)
-- device: GPU/CUDA (default: cuda:0)
-- enable: wether to start YOLOv8 enabled (default: True)
-- threshold: detection threshold (default: 0.5)
-- input_image_topic: camera topic of RGB images (default: /camera/rgb/image_raw)
-- input_depth_topic: camera topic of depth images (default: /camera/depth/image_raw)
-- input_depth_info_topic: camera topic for info data (default: /camera/depth/camera_info)
-- depth_image_units_divisor: divisor to convert the depth image into metres (default: 1000)
-- target_frame: frame to transform the 3D boxes (default: base_link)
-- maximum_detection_threshold: maximum detection threshold in the z axis (default: 0.3)
+- **model**: YOLOv8 model (default: yolov8m.pt)
+- **tracker**: tracker file (default: bytetrack.yaml)
+- **device**: GPU/CUDA (default: cuda:0)
+- **enable**: wether to start YOLOv8 enabled (default: True)
+- **threshold**: detection threshold (default: 0.5)
+- **input_image_topic**: camera topic of RGB images (default: /camera/rgb/image_raw)
+- **input_depth_topic**: camera topic of depth images (default: /camera/depth/image_raw)
+- **input_depth_info_topic**: camera topic for info data (default: /camera/depth/camera_info)
+- **depth_image_units_divisor**: divisor to convert the depth image into metres (default: 1000)
+- **target_frame**: frame to transform the 3D boxes (default: base_link)
+- **maximum_detection_threshold**: maximum detection threshold in the z axis (default: 0.3)
 
 ## Demos
 
