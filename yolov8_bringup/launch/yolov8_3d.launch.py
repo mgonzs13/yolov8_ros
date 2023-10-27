@@ -47,7 +47,7 @@ def generate_launch_description():
     enable_cmd = DeclareLaunchArgument(
         "enable",
         default_value="True",
-        description="Whether to start darknet enabled")
+        description="Whether to start YOLOv8 enabled")
 
     threshold = LaunchConfiguration("threshold")
     threshold_cmd = DeclareLaunchArgument(
@@ -60,20 +60,21 @@ def generate_launch_description():
         "input_image_topic",
         default_value="/camera/rgb/image_raw",
         description="Name of the input image topic")
-    
+
     input_depth_topic = LaunchConfiguration("input_depth_topic")
     input_depth_topic_cmd = DeclareLaunchArgument(
         "input_depth_topic",
         default_value="/camera/aligned_depth_to_color/image_raw",
         description="Name of the input depth topic")
-    
+
     input_depth_info_topic = LaunchConfiguration("input_depth_info_topic")
     input_depth_info_topic_cmd = DeclareLaunchArgument(
         "input_depth_info_topic",
         default_value="/camera/aligned_depth_to_color/camera_info",
         description="Name of the input depth info topic")
-    
-    depth_image_units_divisor = LaunchConfiguration("depth_image_units_divisor")
+
+    depth_image_units_divisor = LaunchConfiguration(
+        "depth_image_units_divisor")
     depth_image_units_divisor_cmd = DeclareLaunchArgument(
         "depth_image_units_divisor",
         default_value="1000",
