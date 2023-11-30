@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "González-Santamarta"
+    given-names: "Miguel Á."
+title: "yolov8_ros"
+date-released: 2023-02-21
+url: "https://github.com/mgonzs13/yolov8_ros"

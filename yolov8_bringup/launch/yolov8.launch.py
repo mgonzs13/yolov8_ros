@@ -47,7 +47,7 @@ def generate_launch_description():
     enable_cmd = DeclareLaunchArgument(
         "enable",
         default_value="True",
-        description="Wheter to start darknet enabled")
+        description="Whether to start YOLOv8 enabled")
 
     threshold = LaunchConfiguration("threshold")
     threshold_cmd = DeclareLaunchArgument(

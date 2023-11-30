@@ -77,10 +77,11 @@ class Yolov8Node(Node):
         # services
         self._srv = self.create_service(SetBool, "enable", self.enable_cb)
 
-    def enable_cb(self,
-                  req: SetBool.Request,
-                  res: SetBool.Response
-                  ) -> SetBool.Response:
+    def enable_cb(
+        self,
+        req: SetBool.Request,
+        res: SetBool.Response
+    ) -> SetBool.Response:
         self.enable = req.data
         res.success = True
         return res
