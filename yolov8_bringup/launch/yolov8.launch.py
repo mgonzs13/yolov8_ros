@@ -61,6 +61,13 @@ def generate_launch_description():
         default_value="/camera/rgb/image_raw",
         description="Name of the input image topic")
 
+    image_reliability = LaunchConfiguration("image_reliability")
+    image_reliability_cmd = DeclareLaunchArgument(
+        "image_reliability",
+        default_value="2",
+        choices=["0", "1", "2"],
+        description="Specific reliability QoS of the input image topic (0=system default, 1=Reliable, 2=Best Effort)")
+
     namespace = LaunchConfiguration("namespace")
     namespace_cmd = DeclareLaunchArgument(
         "namespace",
@@ -75,10 +82,13 @@ def generate_launch_description():
         executable="yolov8_node",
         name="yolov8_node",
         namespace=namespace,
-        parameters=[{"model": model,
-                     "device": device,
-                     "enable": enable,
-                     "threshold": threshold}],
+        parameters=[{
+            "model": model,
+            "device": device,
+            "enable": enable,
+            "threshold": threshold,
+            "image_reliability": image_reliability,
+        }],
         remappings=[("image_raw", input_image_topic)]
     )
 
@@ -87,7 +97,10 @@ def generate_launch_description():
         executable="tracking_node",
         name="tracking_node",
         namespace=namespace,
-        parameters=[{"tracker": tracker}],
+        parameters=[{
+            "tracker": tracker,
+            "image_reliability": image_reliability
+        }],
         remappings=[("image_raw", input_image_topic)]
     )
 
@@ -96,8 +109,11 @@ def generate_launch_description():
         executable="debug_node",
         name="debug_node",
         namespace=namespace,
-        remappings=[("image_raw", input_image_topic),
-                    ("detections", "tracking")]
+        parameters=[{"image_reliability": image_reliability}],
+        remappings=[
+            ("image_raw", input_image_topic),
+            ("detections", "tracking")
+        ]
     )
 
     ld = LaunchDescription()
@@ -108,6 +124,7 @@ def generate_launch_description():
     ld.add_action(enable_cmd)
     ld.add_action(threshold_cmd)
     ld.add_action(input_image_topic_cmd)
+    ld.add_action(image_reliability_cmd)
     ld.add_action(namespace_cmd)
 
     ld.add_action(detector_node_cmd)

@@ -22,7 +22,10 @@ from typing import Tuple
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import QoSProfile
+from rclpy.qos import QoSHistoryPolicy
+from rclpy.qos import QoSDurabilityPolicy
+from rclpy.qos import QoSReliabilityPolicy
 
 import message_filters
 from cv_bridge import CvBridge
@@ -46,6 +49,17 @@ class DebugNode(Node):
         self._class_to_color = {}
         self.cv_bridge = CvBridge()
 
+        # params
+        self.declare_parameter("image_reliability",
+                               QoSReliabilityPolicy.BEST_EFFORT)
+        image_qos_profile = QoSProfile(
+            reliability=self.get_parameter(
+                "image_reliability").get_parameter_value().integer_value,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            durability=QoSDurabilityPolicy.VOLATILE,
+            depth=1
+        )
+
         # pubs
         self._dbg_pub = self.create_publisher(Image, "dbg_image", 10)
         self._bb_markers_pub = self.create_publisher(
@@ -55,7 +69,7 @@ class DebugNode(Node):
 
         # subs
         image_sub = message_filters.Subscriber(
-            self, Image, "image_raw", qos_profile=qos_profile_sensor_data)
+            self, Image, "image_raw", qos_profile=image_qos_profile)
         detections_sub = message_filters.Subscriber(
             self, DetectionArray, "detections", qos_profile=10)
 

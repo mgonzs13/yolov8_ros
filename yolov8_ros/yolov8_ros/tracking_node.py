@@ -17,8 +17,11 @@
 import numpy as np
 
 import rclpy
-from rclpy.qos import qos_profile_sensor_data
 from rclpy.node import Node
+from rclpy.qos import QoSProfile
+from rclpy.qos import QoSHistoryPolicy
+from rclpy.qos import QoSDurabilityPolicy
+from rclpy.qos import QoSReliabilityPolicy
 
 import message_filters
 from cv_bridge import CvBridge
@@ -44,6 +47,16 @@ class TrackingNode(Node):
         tracker = self.get_parameter(
             "tracker").get_parameter_value().string_value
 
+        self.declare_parameter("image_reliability",
+                               QoSReliabilityPolicy.BEST_EFFORT)
+        image_qos_profile = QoSProfile(
+            reliability=self.get_parameter(
+                "image_reliability").get_parameter_value().integer_value,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            durability=QoSDurabilityPolicy.VOLATILE,
+            depth=1
+        )
+
         self.cv_bridge = CvBridge()
         self.tracker = self.create_tracker(tracker)
 
@@ -52,7 +65,7 @@ class TrackingNode(Node):
 
         # subs
         image_sub = message_filters.Subscriber(
-            self, Image, "image_raw", qos_profile=qos_profile_sensor_data)
+            self, Image, "image_raw", qos_profile=image_qos_profile)
         detections_sub = message_filters.Subscriber(
             self, DetectionArray, "detections", qos_profile=10)
 

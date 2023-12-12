@@ -17,8 +17,11 @@
 from typing import List, Dict
 
 import rclpy
-from rclpy.qos import qos_profile_sensor_data
 from rclpy.node import Node
+from rclpy.qos import QoSProfile
+from rclpy.qos import QoSHistoryPolicy
+from rclpy.qos import QoSDurabilityPolicy
+from rclpy.qos import QoSReliabilityPolicy
 
 from cv_bridge import CvBridge
 
@@ -61,6 +64,16 @@ class Yolov8Node(Node):
         self.enable = self.get_parameter(
             "enable").get_parameter_value().bool_value
 
+        self.declare_parameter("image_reliability",
+                               QoSReliabilityPolicy.BEST_EFFORT)
+        image_qos_profile = QoSProfile(
+            reliability=self.get_parameter(
+                "image_reliability").get_parameter_value().integer_value,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            durability=QoSDurabilityPolicy.VOLATILE,
+            depth=1
+        )
+
         self.cv_bridge = CvBridge()
         self.yolo = YOLO(model)
         self.yolo.fuse()
@@ -71,7 +84,7 @@ class Yolov8Node(Node):
         # subs
         self._sub = self.create_subscription(
             Image, "image_raw", self.image_cb,
-            qos_profile_sensor_data
+            image_qos_profile
         )
 
         # services
