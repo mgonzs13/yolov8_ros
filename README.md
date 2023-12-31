@@ -21,6 +21,10 @@ $ colcon build
 $ ros2 launch yolov8_bringup yolov8.launch.py
 ```
 
+<p align="center">
+  <img src="./docs/rqt_graph_yolov8.png" width="100%" />
+</p>
+
 #### Parameters
 
 - **model**: YOLOv8 model (default: yolov8m.pt)
@@ -36,6 +40,10 @@ $ ros2 launch yolov8_bringup yolov8.launch.py
 ```shell
 $ ros2 launch yolov8_bringup yolov8_3d.launch.py
 ```
+
+<p align="center">
+  <img src="./docs/rqt_graph_yolov8_3d.png" width="100%" />
+</p>
 
 #### Parameters
 
