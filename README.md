@@ -29,7 +29,7 @@ $ ros2 launch yolov8_bringup yolov8.launch.py
 - **enable**: wether to start YOLOv8 enabled (default: True)
 - **threshold**: detection threshold (default: 0.5)
 - **input_image_topic**: camera topic of RGB images (default: /camera/rgb/image_raw)
-- **image_reliability**: reliability for the image topic ( 0=system default, 1=Reliable, 2=Best Effort)
+- **image_reliability**: reliability for the image topic: 0=system default, 1=Reliable, 2=Best Effort (default: 2)
 
 ### YOLOv8 3D
 
@@ -45,11 +45,11 @@ $ ros2 launch yolov8_bringup yolov8_3d.launch.py
 - **enable**: wether to start YOLOv8 enabled (default: True)
 - **threshold**: detection threshold (default: 0.5)
 - **input_image_topic**: camera topic of RGB images (default: /camera/rgb/image_raw)
-- **image_reliability**: reliability for the image topic ( 0=system default, 1=Reliable, 2=Best Effort)
+- **image_reliability**: reliability for the image topic: 0=system default, 1=Reliable, 2=Best Effort (default: 2)
 - **input_depth_topic**: camera topic of depth images (default: /camera/depth/image_raw)
-- **depth_image_reliability**: reliability for the depth image topic ( 0=system default, 1=Reliable, 2=Best Effort)
+- **depth_image_reliability**: reliability for the depth image topic: 0=system default, 1=Reliable, 2=Best Effort (default: 2)
 - **input_depth_info_topic**: camera topic for info data (default: /camera/depth/camera_info)
-- **depth_info_reliability**: reliability for the depth info topic ( 0=system default, 1=Reliable, 2=Best Effort)
+- **depth_info_reliability**: reliability for the depth info topic: 0=system default, 1=Reliable, 2=Best Effort (default: 2)
 - **depth_image_units_divisor**: divisor to convert the depth image into metres (default: 1000)
 - **target_frame**: frame to transform the 3D boxes (default: base_link)
 - **maximum_detection_threshold**: maximum detection threshold in the z axis (default: 0.3)
