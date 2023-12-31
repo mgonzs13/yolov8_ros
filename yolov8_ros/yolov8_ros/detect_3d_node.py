@@ -205,7 +205,7 @@ class Detect3DNode(Node):
         msg.center.position.z = z
         msg.size.x = w
         msg.size.y = h
-        msg.size.z = (z_max - z_min)
+        msg.size.z = float(z_max - z_min)
 
         return msg
 
