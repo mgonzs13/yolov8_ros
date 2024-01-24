@@ -15,6 +15,7 @@
 
 
 import cv2
+import math
 import random
 import numpy as np
 from typing import Tuple
@@ -81,6 +82,7 @@ class DebugNode(Node):
 
         # get detection info
         label = detection.class_name
+        speed = detection.speed
         score = detection.score
         box_msg: BoundingBox2D = detection.bbox
         track_id = detection.id
@@ -90,15 +92,72 @@ class DebugNode(Node):
         max_pt = (round(box_msg.center.position.x + box_msg.size.x / 2.0),
                   round(box_msg.center.position.y + box_msg.size.y / 2.0))
 
-        # draw box
-        cv2.rectangle(cv_image, min_pt, max_pt, color, 2)
+        lw = max(round(sum(cv_image.shape) / 2 * 0.003), 2)
+        fs = lw / 3
 
-        # write text
-        label = "{} ({}) ({:.3f})".format(label, str(track_id), score)
-        pos = (min_pt[0] + 5, min_pt[1] + 25)
+        # draw box
+        cv2.rectangle(cv_image, min_pt, max_pt, color, lw)
+
+        # write label
+        label = "{}-{} {}%".format(label, str(track_id), int(score * 100))
+
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(cv_image, label, pos, font,
-                    1, color, 1, cv2.LINE_AA)
+        label_w, label_h = cv2.getTextSize(
+            label, 0, fontScale=fs, thickness=lw)[0]
+        outside = min_pt[1] - label_h >= 3
+
+        cv2.rectangle(
+            cv_image,
+            (min_pt[0] - 1, min_pt[1]),
+            (min_pt[0] + label_w, min_pt[1] - label_h -
+             3 if outside else min_pt[1] + label_h + 3),
+            color,
+            -1,
+            cv2.LINE_AA
+        )
+
+        cv2.putText(
+            cv_image,
+            label,
+            (min_pt[0], min_pt[1] - 2 if outside else min_pt[1] + label_h + 2),
+            font,
+            fs,
+            (255, 255, 255),
+            1,
+            cv2.LINE_AA
+        )
+
+        # write speed
+        if not math.isnan(speed):
+
+            speed = "{:.3f}m/s%".format(speed)
+
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            speed_w, speed_h = cv2.getTextSize(
+                label, 0, fontScale=fs, thickness=lw)[0]
+            outside = min_pt[1] - speed_h >= 3
+
+            cv2.rectangle(
+                cv_image,
+                (min_pt[0] - 1, min_pt[1] - label_h - 4),
+                (min_pt[0] + speed_w, min_pt[1] - label_h - speed_h -
+                 3 if outside else min_pt[1] + label_h + speed_h + 3),
+                color,
+                -1,
+                cv2.LINE_AA
+            )
+
+            cv2.putText(
+                cv_image,
+                speed,
+                (min_pt[0], min_pt[1] - label_h -
+                 6 if outside else min_pt[1] + label_h + speed_h + 6),
+                font,
+                fs,
+                (255, 255, 255),
+                1,
+                cv2.LINE_AA
+            )
 
         return cv_image
 
@@ -250,8 +309,9 @@ class DebugNode(Node):
                     kp_marker_array.markers.append(marker)
 
         # publish dbg image
-        self._dbg_pub.publish(self.cv_bridge.cv2_to_imgmsg(cv_image,
-                                                           encoding=img_msg.encoding))
+        self._dbg_pub.publish(
+            self.cv_bridge.cv2_to_imgmsg(cv_image, encoding=img_msg.encoding)
+        )
         self._bb_markers_pub.publish(bb_marker_array)
         self._kp_markers_pub.publish(kp_marker_array)
 

@@ -169,6 +169,13 @@ def generate_launch_description():
         ]
     )
 
+    speed_stimation_node_cmd = Node(
+        package="yolov8_ros",
+        executable="speed_stimation_node",
+        name="speed_stimation_node",
+        namespace=namespace,
+    )
+
     debug_node_cmd = Node(
         package="yolov8_ros",
         executable="debug_node",
@@ -177,7 +184,7 @@ def generate_launch_description():
         parameters=[{"image_reliability": image_reliability}],
         remappings=[
             ("image_raw", input_image_topic),
-            ("detections", "detections_3d")
+            ("detections", "detections_speed")
         ]
     )
 
@@ -202,6 +209,7 @@ def generate_launch_description():
     ld.add_action(detector_node_cmd)
     ld.add_action(tracking_node_cmd)
     ld.add_action(detect_3d_node_cmd)
+    ld.add_action(speed_stimation_node_cmd)
     ld.add_action(debug_node_cmd)
 
     return ld

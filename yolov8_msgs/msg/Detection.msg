@@ -14,6 +14,9 @@ yolov8_msgs/BoundingBox2D bbox
 # 3D bounding box surrounding the object in meters
 yolov8_msgs/BoundingBox3D bbox3d
 
+# speed computed from the 3D data
+float64 speed
+
 # segmentation mask of the detected object
 # it is only the boundary of the segmented object
 yolov8_msgs/Mask mask
