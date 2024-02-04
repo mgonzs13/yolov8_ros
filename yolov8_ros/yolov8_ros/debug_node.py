@@ -15,7 +15,6 @@
 
 
 import cv2
-import math
 import random
 import numpy as np
 from typing import Tuple
@@ -82,7 +81,6 @@ class DebugNode(Node):
 
         # get detection info
         label = detection.class_name
-        speed = detection.speed
         score = detection.score
         box_msg: BoundingBox2D = detection.bbox
         track_id = detection.id
@@ -128,7 +126,13 @@ class DebugNode(Node):
         )
 
         # write speed
-        if not math.isnan(speed):
+        if detection.velocity.angular.x != np.nan:
+
+            speed = np.sqrt(
+                detection.velocity.linear.x ** 2 +
+                detection.velocity.linear.y ** 2 +
+                detection.velocity.linear.z ** 2
+            )
 
             speed = "{:.3f}m/s%".format(speed)
 

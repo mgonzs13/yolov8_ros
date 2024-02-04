@@ -64,7 +64,7 @@ def generate_launch_description():
     image_reliability = LaunchConfiguration("image_reliability")
     image_reliability_cmd = DeclareLaunchArgument(
         "image_reliability",
-        default_value="2",
+        default_value="1",
         choices=["0", "1", "2"],
         description="Specific reliability QoS of the input image topic (0=system default, 1=Reliable, 2=Best Effort)")
 
@@ -77,7 +77,7 @@ def generate_launch_description():
     depth_image_reliability = LaunchConfiguration("depth_image_reliability")
     depth_image_reliability_cmd = DeclareLaunchArgument(
         "depth_image_reliability",
-        default_value="2",
+        default_value="1",
         choices=["0", "1", "2"],
         description="Specific reliability QoS of the input depth image topic (0=system default, 1=Reliable, 2=Best Effort)")
 
@@ -90,7 +90,7 @@ def generate_launch_description():
     depth_info_reliability = LaunchConfiguration("depth_info_reliability")
     depth_info_reliability_cmd = DeclareLaunchArgument(
         "depth_info_reliability",
-        default_value="2",
+        default_value="1",
         choices=["0", "1", "2"],
         description="Specific reliability QoS of the input depth info topic (0=system default, 1=Reliable, 2=Best Effort)")
 

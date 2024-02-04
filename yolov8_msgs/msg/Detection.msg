@@ -15,7 +15,7 @@ yolov8_msgs/BoundingBox2D bbox
 yolov8_msgs/BoundingBox3D bbox3d
 
 # speed computed from the 3D data
-float64 speed
+geometry_msgs/Twist velocity
 
 # segmentation mask of the detected object
 # it is only the boundary of the segmented object
