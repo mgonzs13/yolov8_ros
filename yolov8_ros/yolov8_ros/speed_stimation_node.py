@@ -33,11 +33,13 @@ class SpeedEstimateNode(Node):
 
         self.pd_lock = Lock()
         self.previous_detections = {}
-        self.noise_cov = [100., 2., 2.]
 
         self.declare_parameter("use_kalman", True)
         self.use_kalman = self.get_parameter(
             "use_kalman").get_parameter_value().bool_value
+        self.declare_parameter("process_noise_cov", [100., 2., 2.])
+        self.p_noise_cov = self.get_parameter(
+            "process_noise_cov").get_parameter_value().double_array_value
 
         self._pub = self.create_publisher(
             DetectionArray, "detections_speed", 10)
@@ -146,12 +148,12 @@ class SpeedEstimateNode(Node):
         dt3 = dt * dt2
         dt4 = dt2**2
         kf.processNoiseCov = np.array([
-            [dt4*self.noise_cov[0]/4, 0, 0, dt3*self.noise_cov[0]/2, 0, 0],
-            [0, dt4*self.noise_cov[1]/4, 0, 0, dt3*self.noise_cov[1]/2, 0],
-            [0, 0, dt4*self.noise_cov[2]/4, 0, 0, dt3*self.noise_cov[2]/2],
-            [dt3*self.noise_cov[0]/2, 0, 0, dt2*self.noise_cov[0], 0, 0],
-            [0, dt3*self.noise_cov[1]/2, 0, 0, dt2*self.noise_cov[1], 0],
-            [0, 0, dt3*self.noise_cov[2]/2, 0, 0, dt2*self.noise_cov[2]]
+            [dt4*self.p_noise_cov[0]/4, 0, 0, dt3*self.p_noise_cov[0]/2, 0, 0],
+            [0, dt4*self.p_noise_cov[1]/4, 0, 0, dt3*self.p_noise_cov[1]/2, 0],
+            [0, 0, dt4*self.p_noise_cov[2]/4, 0, 0, dt3*self.p_noise_cov[2]/2],
+            [dt3*self.p_noise_cov[0]/2, 0, 0, dt2*self.p_noise_cov[0], 0, 0],
+            [0, dt3*self.p_noise_cov[1]/2, 0, 0, dt2*self.p_noise_cov[1], 0],
+            [0, 0, dt3*self.p_noise_cov[2]/2, 0, 0, dt2*self.p_noise_cov[2]]
         ]).astype(np.float32)
 
 
