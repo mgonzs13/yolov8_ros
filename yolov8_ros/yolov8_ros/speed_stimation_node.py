@@ -14,15 +14,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import cv2
 import copy
-from threading import Lock
-
 import numpy as np
-from filterpy.kalman import KalmanFilter
+from typing import List
+from threading import Lock
 
 import rclpy
 from rclpy.node import Node
-
 from yolov8_msgs.msg import Detection
 from yolov8_msgs.msg import DetectionArray
 
@@ -34,6 +33,7 @@ class SpeedEstimateNode(Node):
 
         self.pd_lock = Lock()
         self.previous_detections = {}
+        self.noise_cov = [100., 2., 2.]
 
         self.declare_parameter("use_kalman", True)
         self.use_kalman = self.get_parameter(
@@ -71,15 +71,15 @@ class SpeedEstimateNode(Node):
                         cur_pos.position.z - old_pos.position.z) / t
 
                 else:
-                    kf: KalmanFilter = self.previous_detections[detection.id]["kf"]
+                    kf: cv2.KalmanFilter = self.previous_detections[detection.id]["kf"]
                     self.update_kf(kf, t)
                     kf.predict()
-                    kf.update(np.array([cur_pos.position.x,
-                                        cur_pos.position.y,
-                                        cur_pos.position.z]))
-                    detection.velocity.linear.x = kf.x[3]
-                    detection.velocity.linear.y = kf.x[4]
-                    detection.velocity.linear.z = kf.x[5]
+                    measurement = np.array(
+                        [[cur_pos.position.x, cur_pos.position.y, cur_pos.position.z]]).T.astype(np.float32)
+                    kf.correct(measurement)
+                    detection.velocity.linear.x = np.float(kf.statePost[3])
+                    detection.velocity.linear.y = np.float(kf.statePost[4])
+                    detection.velocity.linear.z = np.float(kf.statePost[5])
             else:
                 detection.velocity.linear.x = np.nan
                 detection.velocity.linear.y = np.nan
@@ -92,9 +92,11 @@ class SpeedEstimateNode(Node):
             self.previous_detections[detection.id]["position"] = detection.bbox3d.center
 
             if self.use_kalman and "kf" not in self.previous_detections[detection.id]:
-                self.previous_detections[detection.id]["kf"] = self.init_kf(np.array([cur_pos.position.x,
-                                                                                      cur_pos.position.y,
-                                                                                      cur_pos.position.z]))
+                self.previous_detections[detection.id]["kf"] = self.init_kf([
+                    cur_pos.position.x,
+                    cur_pos.position.y,
+                    cur_pos.position.z
+                ])
 
         self._pub.publish(detection_msg)
 
@@ -102,56 +104,55 @@ class SpeedEstimateNode(Node):
 
         cur_time = self.get_clock().now().nanoseconds / 1e9
 
-        detections = copy.deepcopy(self.previous_detections)
+        detections = copy.deepcopy(list(self.previous_detections.keys()))
         for detection_id in detections:
 
             if cur_time - self.previous_detections[detection_id]["timestamp"] > 1:
 
                 del self.previous_detections[detection_id]
 
-    def init_kf(self, initial_pose: np.ndarray) -> KalmanFilter:
-        kf = KalmanFilter(dim_x=9, dim_z=3)
+    def init_kf(self, initial_pose: List[float]) -> cv2.KalmanFilter:
 
-        # initial state [x, y, z, vx, vy, vz, ax, ay, az]
-        kf.x = np.zeros(9)
-        kf.x[0] = initial_pose[0]
-        kf.x[1] = initial_pose[1]
-        kf.x[2] = initial_pose[2]
+        kf = cv2.KalmanFilter(6, 3)
 
-        # state transition matrix
-        kf.F = np.eye(9)
+        kf.measurementMatrix = np.array([
+            [1, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0]
+        ], np.float32)
 
-        # measurement matrix
-        kf.H = np.array([
-            [1, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0, 0]
-        ])
+        kf.measurementNoiseCov = np.eye(3).astype(np.float32)
 
-        # uncertainty covariance
-        kf.P = np.eye(9) * 1e3
+        kf.statePost = np.concatenate(
+            [initial_pose, [0, 0, 0]]
+        ).astype(np.float32)
 
-        # measurement noise covariance matrix R
-        kf.R = np.eye(3) * 0.1
-
-        # process noise covariance matrix Q
-        kf.Q = np.eye(9) * 0.01
+        kf.errorCovPost = np.diag(
+            [1., 1., 1., 10., 10., 10.]
+        ).astype(np.float32)
 
         return kf
 
-    def update_kf(self, kf: KalmanFilter, dt: float) -> None:
+    def update_kf(self, kf: cv2.KalmanFilter, dt: float) -> None:
         # update the state transition matrix F
-        kf.F = np.array([
-            [1, 0, 0, dt, 0, 0, 0.5 * dt**2, 0, 0],
-            [0, 1, 0, 0, dt, 0, 0, 0.5 * dt**2, 0],
-            [0, 0, 1, 0, 0, dt, 0, 0, 0.5 * dt**2],
-            [0, 0, 0, 1, 0, 0, dt, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, dt, 0],
-            [0, 0, 0, 0, 0, 1, 0, 0, dt],
-            [0, 0, 0, 0, 0, 0, 1, dt, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1, dt],
-            [0, 0, 0, 0, 0, 0, 0, 0, 1]
-        ])
+        kf.transitionMatrix = np.eye(6).astype(np.float32)
+        kf.transitionMatrix[0, 3] = dt
+        kf.transitionMatrix[1, 4] = dt
+        kf.transitionMatrix[2, 5] = dt
+
+        # update the Q matrix
+        # https://github.com/ros-planning/navigation2_dynamic/blob/6eae17e563ec28b9bc9f658748c4aa82e3e0fd2a/kf_hungarian_tracker/kf_hungarian_tracker/obstacle_class.py#L64
+        dt2 = dt**2
+        dt3 = dt * dt2
+        dt4 = dt2**2
+        kf.processNoiseCov = np.array([
+            [dt4*self.noise_cov[0]/4, 0, 0, dt3*self.noise_cov[0]/2, 0, 0],
+            [0, dt4*self.noise_cov[1]/4, 0, 0, dt3*self.noise_cov[1]/2, 0],
+            [0, 0, dt4*self.noise_cov[2]/4, 0, 0, dt3*self.noise_cov[2]/2],
+            [dt3*self.noise_cov[0]/2, 0, 0, dt2*self.noise_cov[0], 0, 0],
+            [0, dt3*self.noise_cov[1]/2, 0, 0, dt2*self.noise_cov[1], 0],
+            [0, 0, dt3*self.noise_cov[2]/2, 0, 0, dt2*self.noise_cov[2]]
+        ]).astype(np.float32)
 
 
 def main():
