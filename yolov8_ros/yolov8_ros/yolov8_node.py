@@ -90,6 +90,8 @@ class Yolov8Node(Node):
         # services
         self._srv = self.create_service(SetBool, "enable", self.enable_cb)
 
+        self.get_logger().info("YOLO node started")
+
     def enable_cb(
         self,
         req: SetBool.Request,
