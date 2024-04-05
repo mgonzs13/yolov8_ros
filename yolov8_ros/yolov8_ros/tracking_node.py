@@ -23,6 +23,8 @@ from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSReliabilityPolicy
 
+from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn, LifecycleState
+
 import message_filters
 from cv_bridge import CvBridge
 
@@ -37,32 +39,40 @@ from yolov8_msgs.msg import Detection
 from yolov8_msgs.msg import DetectionArray
 
 
-class TrackingNode(Node):
+class TrackingNode(LifecycleNode):
 
     def __init__(self) -> None:
         super().__init__("tracking_node")
 
         # params
         self.declare_parameter("tracker", "bytetrack.yaml")
-        tracker = self.get_parameter(
-            "tracker").get_parameter_value().string_value
-
         self.declare_parameter("image_reliability",
                                QoSReliabilityPolicy.BEST_EFFORT)
+
+        self.cv_bridge = CvBridge()
+
+
+    def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+        tracker_name = self.get_parameter(
+            "tracker").get_parameter_value().string_value
+        
+        self.image_reliability = self.get_parameter(
+            "image_reliability").get_parameter_value().integer_value
+        
+        self.tracker = self.create_tracker(tracker_name)
+        self._pub = self.create_publisher(DetectionArray, "tracking", 10)
+
+        return TransitionCallbackReturn.SUCCESS
+    
+
+    def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         image_qos_profile = QoSProfile(
-            reliability=self.get_parameter(
-                "image_reliability").get_parameter_value().integer_value,
+            reliability=self.image_reliability,
             history=QoSHistoryPolicy.KEEP_LAST,
             durability=QoSDurabilityPolicy.VOLATILE,
             depth=1
         )
-
-        self.cv_bridge = CvBridge()
-        self.tracker = self.create_tracker(tracker)
-
-        # pubs
-        self._pub = self.create_publisher(DetectionArray, "tracking", 10)
-
+        
         # subs
         image_sub = message_filters.Subscriber(
             self, Image, "image_raw", qos_profile=image_qos_profile)
@@ -72,6 +82,22 @@ class TrackingNode(Node):
         self._synchronizer = message_filters.ApproximateTimeSynchronizer(
             (image_sub, detections_sub), 10, 0.5)
         self._synchronizer.registerCallback(self.detections_cb)
+        
+        return TransitionCallbackReturn.SUCCESS
+    
+    def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.destroy_subscription(self.image_sub.sub)
+        self.destroy_subscription(self.detections_sub.sub)
+
+        del self._synchronizer
+        self._synchronizer = None
+        
+        return TransitionCallbackReturn.SUCCESS
+    
+    def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
+        del self.tracker
+
+        return TransitionCallbackReturn.SUCCESS
 
     def create_tracker(self, tracker_yaml: str) -> BaseTrack:
 
