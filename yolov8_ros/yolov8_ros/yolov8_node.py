@@ -21,8 +21,9 @@ from rclpy.qos import QoSProfile
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSReliabilityPolicy
-
-from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn, LifecycleState
+from rclpy.lifecycle import LifecycleNode
+from rclpy.lifecycle import TransitionCallbackReturn
+from rclpy.lifecycle import LifecycleState 
 
 from cv_bridge import CvBridge
 
@@ -57,7 +58,7 @@ class Yolov8Node(LifecycleNode):
         self.declare_parameter("image_reliability",
                                QoSReliabilityPolicy.BEST_EFFORT)
         
-        self.declare_parameter("image_topic", "image_raw")
+        self.declare_parameter("input_image_topic", "/camera/rgb/image_raw")
 
         self.get_logger().info('Yolov8Node created')
 
@@ -86,7 +87,7 @@ class Yolov8Node(LifecycleNode):
         )
 
         self.topic_name = self.get_parameter(
-            "image_topic").get_parameter_value().string_value
+            "input_image_topic").get_parameter_value().string_value
 
         self._pub = self.create_lifecycle_publisher(DetectionArray, "detections", 10)
         self._srv = self.create_service(
@@ -109,7 +110,7 @@ class Yolov8Node(LifecycleNode):
 
         # subs
         self._sub = self.create_subscription(
-            Image, "image_raw", self.image_cb,
+            Image, self.topic_name, self.image_cb,
             self.image_qos_profile
         )
 
@@ -234,7 +235,7 @@ class Yolov8Node(LifecycleNode):
     def image_cb(self, msg: Image) -> None:
 
         if self.enable:
-            
+
             # convert image + predict
             cv_image = self.cv_bridge.imgmsg_to_cv2(msg)
             results = self.yolo.predict(
@@ -289,6 +290,8 @@ class Yolov8Node(LifecycleNode):
 def main():
     rclpy.init()
     node = Yolov8Node()
+    node.trigger_configure()
+    node.trigger_activate()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

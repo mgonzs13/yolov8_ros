@@ -5,6 +5,8 @@ ROS 2 wrap for [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) 
 This fork adds Lifecycle Nodes to all the nodes available in the package.
 This implementation tries to reduce the workload in the unconfigured and unactivated states by only loading the models and activating the subscriber on the activated state.
 
+![lc_usage](./docs/usage.GIF)
+
 ## Installation
 
 ```shell

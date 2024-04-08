@@ -23,8 +23,9 @@ from rclpy.qos import QoSProfile
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSReliabilityPolicy
-
-from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn, LifecycleState
+from rclpy.lifecycle import LifecycleNode
+from rclpy.lifecycle import TransitionCallbackReturn
+from rclpy.lifecycle import LifecycleState 
 
 import message_filters
 from cv_bridge import CvBridge
@@ -367,6 +368,8 @@ class Detect3DNode(LifecycleNode):
 def main():
     rclpy.init()
     node = Detect3DNode()
+    node.trigger_configure()
+    node.trigger_activate()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
