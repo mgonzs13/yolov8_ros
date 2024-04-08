@@ -2,11 +2,6 @@
 
 ROS 2 wrap for [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) to perform object detection and tracking, instance segmentation and human pose estimation. There are also 3D versions of object detection and human pose estimation based on depth images.
 
-This fork adds Lifecycle Nodes to all the nodes available in the package.
-This implementation tries to reduce the workload in the unconfigured and unactivated states by only loading the models and activating the subscriber on the activated state.
-
-![lc_usage](./docs/usage.GIF)
-
 ## Installation
 
 ```shell
@@ -83,6 +78,25 @@ $ ros2 launch yolov8_bringup yolov8_3d.launch.py
 - **depth_image_units_divisor**: divisor to convert the depth image into metres (default: 1000)
 - **target_frame**: frame to transform the 3D boxes (default: base_link)
 - **maximum_detection_threshold**: maximum detection threshold in the z axis (default: 0.3)
+
+## Lifecyle nodes
+
+Last update adds Lifecycle Nodes support to all the nodes available in the package.
+This implementation tries to reduce the workload in the unconfigured and unactivated states by only loading the models and activating the subscriber on the activated state.
+
+These are some resource comparisons using the 'yolov8m.pt' model on a 30fps video stream.
+
+<p align="center">
+  <img src="./docs/cpu_usage.png" width="100%" />
+</p>
+
+<p align="center">
+  <img src="./docs/vram_usage.png" width="100%" />
+</p>
+
+<p align="center">
+  <img src="./docs/network_usage.png" width="100%" />
+</p>
 
 ## Demos
 
