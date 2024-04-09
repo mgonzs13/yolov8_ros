@@ -17,11 +17,13 @@
 from typing import List, Dict
 
 import rclpy
-from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSReliabilityPolicy
+from rclpy.lifecycle import LifecycleNode
+from rclpy.lifecycle import TransitionCallbackReturn
+from rclpy.lifecycle import LifecycleState 
 
 from cv_bridge import CvBridge
 
@@ -30,6 +32,7 @@ from ultralytics.engine.results import Results
 from ultralytics.engine.results import Boxes
 from ultralytics.engine.results import Masks
 from ultralytics.engine.results import Keypoints
+from torch import cuda
 
 from sensor_msgs.msg import Image
 from yolov8_msgs.msg import Point2D
@@ -39,67 +42,107 @@ from yolov8_msgs.msg import KeyPoint2D
 from yolov8_msgs.msg import KeyPoint2DArray
 from yolov8_msgs.msg import Detection
 from yolov8_msgs.msg import DetectionArray
+
 from std_srvs.srv import SetBool
 
+class Yolov8Node(LifecycleNode):
 
-class Yolov8Node(Node):
-
-    def __init__(self) -> None:
-        super().__init__("yolov8_node")
+    def __init__(self, **kwargs) -> None:
+        super().__init__("yolov8_node", **kwargs)
 
         # params
         self.declare_parameter("model", "yolov8m.pt")
-        model = self.get_parameter(
+        self.declare_parameter("device", "cuda:0")
+        self.declare_parameter("threshold", 0.5)
+        self.declare_parameter("enable", True)
+        self.declare_parameter("image_reliability",
+                               QoSReliabilityPolicy.BEST_EFFORT)
+        
+        self.declare_parameter("input_image_topic", "/camera/rgb/image_raw")
+
+        self.get_logger().info('Yolov8Node created')
+
+
+    def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.model = self.get_parameter(
             "model").get_parameter_value().string_value
 
-        self.declare_parameter("device", "cuda:0")
         self.device = self.get_parameter(
             "device").get_parameter_value().string_value
 
-        self.declare_parameter("threshold", 0.5)
         self.threshold = self.get_parameter(
             "threshold").get_parameter_value().double_value
 
-        self.declare_parameter("enable", True)
         self.enable = self.get_parameter(
             "enable").get_parameter_value().bool_value
-
-        self.declare_parameter("image_reliability",
-                               QoSReliabilityPolicy.BEST_EFFORT)
-        image_qos_profile = QoSProfile(
-            reliability=self.get_parameter(
-                "image_reliability").get_parameter_value().integer_value,
+        
+        self.reliability = self.get_parameter(
+                "image_reliability").get_parameter_value().integer_value
+        
+        self.image_qos_profile = QoSProfile(
+            reliability=self.reliability,
             history=QoSHistoryPolicy.KEEP_LAST,
             durability=QoSDurabilityPolicy.VOLATILE,
             depth=1
         )
 
-        self.cv_bridge = CvBridge()
-        self.yolo = YOLO(model)
-        self.yolo.fuse()
+        self.topic_name = self.get_parameter(
+            "input_image_topic").get_parameter_value().string_value
 
-        # pubs
-        self._pub = self.create_publisher(DetectionArray, "detections", 10)
+        self._pub = self.create_lifecycle_publisher(DetectionArray, "detections", 10)
+        self._srv = self.create_service(
+            SetBool, "enable", self.enable_cb
+        )
+        self.cv_bridge = CvBridge()
+        
+
+        self.get_logger().info("YOLOv8 configured")
+        return TransitionCallbackReturn.SUCCESS
+
+    def enable_cb(self, request, response):
+        self.enable = request.data
+        response.success = True
+        return response
+
+    def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.yolo = YOLO(self.model)
+        self.yolo.fuse()
 
         # subs
         self._sub = self.create_subscription(
-            Image, "image_raw", self.image_cb,
-            image_qos_profile
+            Image, self.topic_name, self.image_cb,
+            self.image_qos_profile
         )
 
-        # services
-        self._srv = self.create_service(SetBool, "enable", self.enable_cb)
+        super().on_activate(state)
 
-        self.get_logger().info("YOLO node started")
 
-    def enable_cb(
-        self,
-        req: SetBool.Request,
-        res: SetBool.Response
-    ) -> SetBool.Response:
-        self.enable = req.data
-        res.success = True
-        return res
+        self.get_logger().info("YOLOv8 enabled")
+        return TransitionCallbackReturn.SUCCESS
+    
+    def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        del self.yolo
+        if 'cuda' in self.device:
+            self.get_logger().info("Clearing CUDA cache")
+            cuda.empty_cache()
+        
+        self.destroy_subscription(self._sub)
+        self._sub = None
+
+        super().on_deactivate(state)
+
+
+        self.get_logger().info("YOLOv8 disabled")
+        return TransitionCallbackReturn.SUCCESS
+    
+    def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.destroy_publisher(self._pub)
+
+        del self.image_qos_profile
+
+        self.get_logger().info("YOLOv8 cleaned up")
+        return TransitionCallbackReturn.SUCCESS
+
 
     def parse_hypothesis(self, results: Results) -> List[Dict]:
 
@@ -240,10 +283,15 @@ class Yolov8Node(Node):
             detections_msg.header = msg.header
             self._pub.publish(detections_msg)
 
+            del results
+            del cv_image
+
 
 def main():
     rclpy.init()
     node = Yolov8Node()
+    node.trigger_configure()
+    node.trigger_activate()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

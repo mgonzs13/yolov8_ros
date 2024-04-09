@@ -26,6 +26,9 @@ from rclpy.qos import QoSProfile
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSReliabilityPolicy
+from rclpy.lifecycle import LifecycleNode
+from rclpy.lifecycle import TransitionCallbackReturn
+from rclpy.lifecycle import LifecycleState 
 
 import message_filters
 from cv_bridge import CvBridge
@@ -41,7 +44,7 @@ from yolov8_msgs.msg import Detection
 from yolov8_msgs.msg import DetectionArray
 
 
-class DebugNode(Node):
+class DebugNode(LifecycleNode):
 
     def __init__(self) -> None:
         super().__init__("debug_node")
@@ -52,7 +55,11 @@ class DebugNode(Node):
         # params
         self.declare_parameter("image_reliability",
                                QoSReliabilityPolicy.BEST_EFFORT)
-        image_qos_profile = QoSProfile(
+        
+        self.get_logger().info("Debug node created")
+
+    def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.image_qos_profile = QoSProfile(
             reliability=self.get_parameter(
                 "image_reliability").get_parameter_value().integer_value,
             history=QoSHistoryPolicy.KEEP_LAST,
@@ -67,15 +74,35 @@ class DebugNode(Node):
         self._kp_markers_pub = self.create_publisher(
             MarkerArray, "dgb_kp_markers", 10)
 
+        return TransitionCallbackReturn.SUCCESS
+    
+    def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         # subs
-        image_sub = message_filters.Subscriber(
-            self, Image, "image_raw", qos_profile=image_qos_profile)
-        detections_sub = message_filters.Subscriber(
+        self.image_sub = message_filters.Subscriber(
+            self, Image, "image_raw", qos_profile=self.image_qos_profile)
+        self.detections_sub = message_filters.Subscriber(
             self, DetectionArray, "detections", qos_profile=10)
 
         self._synchronizer = message_filters.ApproximateTimeSynchronizer(
-            (image_sub, detections_sub), 10, 0.5)
+            (self.image_sub, self.detections_sub), 10, 0.5)
         self._synchronizer.registerCallback(self.detections_cb)
+
+        return TransitionCallbackReturn.SUCCESS
+    
+    def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.destroy_subscription(self.image_sub.sub)
+        self.destroy_subscription(self.detections_sub.sub)
+
+        del self._synchronizer
+        
+        return TransitionCallbackReturn.SUCCESS
+    
+    def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.destroy_publisher(self._dbg_pub)
+        self.destroy_publisher(self._bb_markers_pub)
+        self.destroy_publisher(self._kp_markers_pub)
+
+        return TransitionCallbackReturn.SUCCESS
 
     def draw_box(self, cv_image: np.array, detection: Detection, color: Tuple[int]) -> np.array:
 
@@ -259,6 +286,8 @@ class DebugNode(Node):
 def main():
     rclpy.init()
     node = DebugNode()
+    node.trigger_configure()
+    node.trigger_activate()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

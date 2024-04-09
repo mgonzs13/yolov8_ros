@@ -79,6 +79,18 @@ $ ros2 launch yolov8_bringup yolov8_3d.launch.py
 - **target_frame**: frame to transform the 3D boxes (default: base_link)
 - **maximum_detection_threshold**: maximum detection threshold in the z axis (default: 0.3)
 
+## Lifecyle nodes
+
+Previous updates add Lifecycle Nodes support to all the nodes available in the package.
+This implementation tries to reduce the workload in the unconfigured and inactive states by only loading the models and activating the subscriber on the active state.
+
+These are some resource comparisons using the 'yolov8m.pt' model on a 30fps video stream.
+
+| State       | CPU Usage (i7 12th Gen)  | VRAM Usage  | Bandwidth Usage |
+|-------------|--------------------------|-------------|-----------------|
+| Active   | 40-50% in one core       | 628 MB      | Up to 200 Mbps  |
+| Inactive | ~5-7% in one core        | 338 MB      | 0-20 Kbps       |
+
 ## Demos
 
 ## Object Detection
