@@ -81,22 +81,15 @@ $ ros2 launch yolov8_bringup yolov8_3d.launch.py
 
 ## Lifecyle nodes
 
-Last update adds Lifecycle Nodes support to all the nodes available in the package.
-This implementation tries to reduce the workload in the unconfigured and unactivated states by only loading the models and activating the subscriber on the activated state.
+Previous updates add Lifecycle Nodes support to all the nodes available in the package.
+This implementation tries to reduce the workload in the unconfigured and inactive states by only loading the models and activating the subscriber on the active state.
 
 These are some resource comparisons using the 'yolov8m.pt' model on a 30fps video stream.
 
-<p align="center">
-  <img src="./docs/cpu_usage.png" width="100%" />
-</p>
-
-<p align="center">
-  <img src="./docs/vram_usage.png" width="100%" />
-</p>
-
-<p align="center">
-  <img src="./docs/network_usage.png" width="100%" />
-</p>
+| State       | CPU Usage (i7 12th Gen)  | VRAM Usage  | Bandwidth Usage |
+|-------------|--------------------------|-------------|-----------------|
+| Active   | 40-50% in one core       | 628 MB      | Up to 200 Mbps  |
+| Inactive | ~5-7% in one core        | 338 MB      | 0-20 Kbps       |
 
 ## Demos
 
