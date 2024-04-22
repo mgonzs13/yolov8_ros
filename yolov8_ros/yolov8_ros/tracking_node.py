@@ -54,6 +54,8 @@ class TrackingNode(LifecycleNode):
 
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f'Configuring {self.get_name()}')
+
         tracker_name = self.get_parameter(
             "tracker").get_parameter_value().string_value
         
@@ -67,6 +69,8 @@ class TrackingNode(LifecycleNode):
     
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f'Activating {self.get_name()}')
+
         image_qos_profile = QoSProfile(
             reliability=self.image_reliability,
             history=QoSHistoryPolicy.KEEP_LAST,
@@ -87,6 +91,8 @@ class TrackingNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
     
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f'Deactivating {self.get_name()}')
+
         self.destroy_subscription(self.image_sub.sub)
         self.destroy_subscription(self.detections_sub.sub)
 
@@ -96,6 +102,8 @@ class TrackingNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
     
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f'Cleaning up {self.get_name()}')
+
         del self.tracker
 
         return TransitionCallbackReturn.SUCCESS
