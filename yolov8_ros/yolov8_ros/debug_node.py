@@ -59,6 +59,8 @@ class DebugNode(LifecycleNode):
         self.get_logger().info("Debug node created")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f'Configuring {self.get_name()}')
+
         self.image_qos_profile = QoSProfile(
             reliability=self.get_parameter(
                 "image_reliability").get_parameter_value().integer_value,
@@ -77,6 +79,8 @@ class DebugNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
     
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f'Activating {self.get_name()}')
+
         # subs
         self.image_sub = message_filters.Subscriber(
             self, Image, "image_raw", qos_profile=self.image_qos_profile)
@@ -90,6 +94,8 @@ class DebugNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
     
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f'Deactivating {self.get_name()}')
+
         self.destroy_subscription(self.image_sub.sub)
         self.destroy_subscription(self.detections_sub.sub)
 
@@ -98,6 +104,8 @@ class DebugNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
     
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f'Cleaning up {self.get_name()}')
+
         self.destroy_publisher(self._dbg_pub)
         self.destroy_publisher(self._bb_markers_pub)
         self.destroy_publisher(self._kp_markers_pub)

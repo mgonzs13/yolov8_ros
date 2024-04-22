@@ -62,6 +62,8 @@ class Detect3DNode(LifecycleNode):
 
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f'Configuring {self.get_name()}')
+
         self.target_frame = self.get_parameter(
             "target_frame").get_parameter_value().string_value
         self.maximum_detection_threshold = self.get_parameter(
@@ -72,7 +74,7 @@ class Detect3DNode(LifecycleNode):
                 "depth_image_reliability").get_parameter_value().integer_value
         
         self.depth_image_qos_profile = QoSProfile(
-            dimg_reliability,
+            reliability=dimg_reliability,
             history=QoSHistoryPolicy.KEEP_LAST,
             durability=QoSDurabilityPolicy.VOLATILE,
             depth=1
@@ -82,7 +84,7 @@ class Detect3DNode(LifecycleNode):
                 "depth_info_reliability").get_parameter_value().integer_value
         
         self.depth_info_qos_profile = QoSProfile(
-            dinfo_reliability,
+            reliability=dinfo_reliability,
             history=QoSHistoryPolicy.KEEP_LAST,
             durability=QoSDurabilityPolicy.VOLATILE,
             depth=1
@@ -95,6 +97,8 @@ class Detect3DNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
     
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f'Activating {self.get_name()}')
+
         # subs
         self.depth_sub = message_filters.Subscriber(
             self, Image, "depth_image",
@@ -112,6 +116,8 @@ class Detect3DNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
     
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f'Deactivating {self.get_name()}')
+
         self.destroy_subscription(self.depth_sub.sub)
         self.destroy_subscription(self.depth_info_sub.sub)
         self.destroy_subscription(self.detections_sub.sub)
@@ -121,6 +127,8 @@ class Detect3DNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
     
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f'Cleaning up {self.get_name()}')
+
         del self.tf_listener
 
         self.destroy_publisher(self._pub)
