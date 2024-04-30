@@ -205,9 +205,9 @@ class DebugNode(LifecycleNode):
         marker.scale.y = bbox3d.size.y
         marker.scale.z = bbox3d.size.z
 
-        marker.color.b = float(color[0])
-        marker.color.g = float(color[1])
-        marker.color.r = float(color[2])
+        marker.color.b = color[0] / 255.0
+        marker.color.g = color[1] / 255.0
+        marker.color.r = color[2] / 255.0
         marker.color.a = 0.4
 
         marker.lifetime = Duration(seconds=0.5).to_msg()

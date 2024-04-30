@@ -59,8 +59,6 @@ class Yolov8Node(LifecycleNode):
         self.declare_parameter("image_reliability",
                                QoSReliabilityPolicy.BEST_EFFORT)
 
-        self.declare_parameter("input_image_topic", "image_raw")
-
         self.get_logger().info('Yolov8Node created')
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
@@ -88,9 +86,6 @@ class Yolov8Node(LifecycleNode):
             depth=1
         )
 
-        self.topic_name = self.get_parameter(
-            "input_image_topic").get_parameter_value().string_value
-
         self._pub = self.create_lifecycle_publisher(
             DetectionArray, "detections", 10)
         self._srv = self.create_service(
@@ -113,7 +108,9 @@ class Yolov8Node(LifecycleNode):
 
         # subs
         self._sub = self.create_subscription(
-            Image, self.topic_name, self.image_cb,
+            Image,
+            "image_raw",
+            self.image_cb,
             self.image_qos_profile
         )
 
