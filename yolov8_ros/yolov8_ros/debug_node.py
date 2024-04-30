@@ -28,7 +28,7 @@ from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSReliabilityPolicy
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import TransitionCallbackReturn
-from rclpy.lifecycle import LifecycleState 
+from rclpy.lifecycle import LifecycleState
 
 import message_filters
 from cv_bridge import CvBridge
@@ -55,7 +55,7 @@ class DebugNode(LifecycleNode):
         # params
         self.declare_parameter("image_reliability",
                                QoSReliabilityPolicy.BEST_EFFORT)
-        
+
         self.get_logger().info("Debug node created")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
@@ -77,7 +77,7 @@ class DebugNode(LifecycleNode):
             MarkerArray, "dgb_kp_markers", 10)
 
         return TransitionCallbackReturn.SUCCESS
-    
+
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f'Activating {self.get_name()}')
 
@@ -92,7 +92,7 @@ class DebugNode(LifecycleNode):
         self._synchronizer.registerCallback(self.detections_cb)
 
         return TransitionCallbackReturn.SUCCESS
-    
+
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f'Deactivating {self.get_name()}')
 
@@ -100,9 +100,9 @@ class DebugNode(LifecycleNode):
         self.destroy_subscription(self.detections_sub.sub)
 
         del self._synchronizer
-        
+
         return TransitionCallbackReturn.SUCCESS
-    
+
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f'Cleaning up {self.get_name()}')
 
@@ -181,7 +181,7 @@ class DebugNode(LifecycleNode):
 
         return cv_image
 
-    def create_bb_marker(self, detection: Detection) -> Marker:
+    def create_bb_marker(self, detection: Detection, color: Tuple[int]) -> Marker:
 
         bbox3d = detection.bbox3d
 
@@ -205,9 +205,9 @@ class DebugNode(LifecycleNode):
         marker.scale.y = bbox3d.size.y
         marker.scale.z = bbox3d.size.z
 
-        marker.color.b = 0.0
-        marker.color.g = detection.score * 255.0
-        marker.color.r = (1.0 - detection.score) * 255.0
+        marker.color.b = float(color[0])
+        marker.color.g = float(color[1])
+        marker.color.r = float(color[2])
         marker.color.a = 0.4
 
         marker.lifetime = Duration(seconds=0.5).to_msg()
@@ -271,7 +271,7 @@ class DebugNode(LifecycleNode):
             cv_image = self.draw_keypoints(cv_image, detection)
 
             if detection.bbox3d.frame_id:
-                marker = self.create_bb_marker(detection)
+                marker = self.create_bb_marker(detection, color)
                 marker.header.stamp = img_msg.header.stamp
                 marker.id = len(bb_marker_array.markers)
                 bb_marker_array.markers.append(marker)

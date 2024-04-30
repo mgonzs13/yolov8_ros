@@ -25,7 +25,7 @@ from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSReliabilityPolicy
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import TransitionCallbackReturn
-from rclpy.lifecycle import LifecycleState 
+from rclpy.lifecycle import LifecycleState
 
 import message_filters
 from cv_bridge import CvBridge
@@ -55,11 +55,10 @@ class Detect3DNode(LifecycleNode):
                                QoSReliabilityPolicy.BEST_EFFORT)
         self.declare_parameter("depth_info_reliability",
                                QoSReliabilityPolicy.BEST_EFFORT)
-        
+
         # aux
         self.tf_buffer = Buffer()
         self.cv_bridge = CvBridge()
-
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f'Configuring {self.get_name()}')
@@ -70,9 +69,9 @@ class Detect3DNode(LifecycleNode):
             "maximum_detection_threshold").get_parameter_value().double_value
         self.depth_image_units_divisor = self.get_parameter(
             "depth_image_units_divisor").get_parameter_value().integer_value
-        dimg_reliability=self.get_parameter(
-                "depth_image_reliability").get_parameter_value().integer_value
-        
+        dimg_reliability = self.get_parameter(
+            "depth_image_reliability").get_parameter_value().integer_value
+
         self.depth_image_qos_profile = QoSProfile(
             reliability=dimg_reliability,
             history=QoSHistoryPolicy.KEEP_LAST,
@@ -80,9 +79,9 @@ class Detect3DNode(LifecycleNode):
             depth=1
         )
 
-        dinfo_reliability=self.get_parameter(
-                "depth_info_reliability").get_parameter_value().integer_value
-        
+        dinfo_reliability = self.get_parameter(
+            "depth_info_reliability").get_parameter_value().integer_value
+
         self.depth_info_qos_profile = QoSProfile(
             reliability=dinfo_reliability,
             history=QoSHistoryPolicy.KEEP_LAST,
@@ -95,7 +94,7 @@ class Detect3DNode(LifecycleNode):
         self._pub = self.create_publisher(DetectionArray, "detections_3d", 10)
 
         return TransitionCallbackReturn.SUCCESS
-    
+
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f'Activating {self.get_name()}')
 
@@ -114,7 +113,7 @@ class Detect3DNode(LifecycleNode):
         self._synchronizer.registerCallback(self.on_detections)
 
         return TransitionCallbackReturn.SUCCESS
-    
+
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f'Deactivating {self.get_name()}')
 
@@ -125,7 +124,7 @@ class Detect3DNode(LifecycleNode):
         del self._synchronizer
 
         return TransitionCallbackReturn.SUCCESS
-    
+
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f'Cleaning up {self.get_name()}')
 

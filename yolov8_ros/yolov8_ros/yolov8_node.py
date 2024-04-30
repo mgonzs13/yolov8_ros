@@ -23,7 +23,7 @@ from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSReliabilityPolicy
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import TransitionCallbackReturn
-from rclpy.lifecycle import LifecycleState 
+from rclpy.lifecycle import LifecycleState
 
 from cv_bridge import CvBridge
 
@@ -45,6 +45,7 @@ from yolov8_msgs.msg import DetectionArray
 
 from std_srvs.srv import SetBool
 
+
 class Yolov8Node(LifecycleNode):
 
     def __init__(self, **kwargs) -> None:
@@ -57,11 +58,10 @@ class Yolov8Node(LifecycleNode):
         self.declare_parameter("enable", True)
         self.declare_parameter("image_reliability",
                                QoSReliabilityPolicy.BEST_EFFORT)
-        
-        self.declare_parameter("input_image_topic", "/camera/rgb/image_raw")
+
+        self.declare_parameter("input_image_topic", "image_raw")
 
         self.get_logger().info('Yolov8Node created')
-
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f'Configuring {self.get_name()}')
@@ -77,10 +77,10 @@ class Yolov8Node(LifecycleNode):
 
         self.enable = self.get_parameter(
             "enable").get_parameter_value().bool_value
-        
+
         self.reliability = self.get_parameter(
-                "image_reliability").get_parameter_value().integer_value
-        
+            "image_reliability").get_parameter_value().integer_value
+
         self.image_qos_profile = QoSProfile(
             reliability=self.reliability,
             history=QoSHistoryPolicy.KEEP_LAST,
@@ -91,12 +91,13 @@ class Yolov8Node(LifecycleNode):
         self.topic_name = self.get_parameter(
             "input_image_topic").get_parameter_value().string_value
 
-        self._pub = self.create_lifecycle_publisher(DetectionArray, "detections", 10)
+        self._pub = self.create_lifecycle_publisher(
+            DetectionArray, "detections", 10)
         self._srv = self.create_service(
             SetBool, "enable", self.enable_cb
         )
         self.cv_bridge = CvBridge()
-        
+
         return TransitionCallbackReturn.SUCCESS
 
     def enable_cb(self, request, response):
@@ -119,7 +120,7 @@ class Yolov8Node(LifecycleNode):
         super().on_activate(state)
 
         return TransitionCallbackReturn.SUCCESS
-    
+
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f'Deactivating {self.get_name()}')
 
@@ -127,14 +128,14 @@ class Yolov8Node(LifecycleNode):
         if 'cuda' in self.device:
             self.get_logger().info("Clearing CUDA cache")
             cuda.empty_cache()
-        
+
         self.destroy_subscription(self._sub)
         self._sub = None
 
         super().on_deactivate(state)
 
         return TransitionCallbackReturn.SUCCESS
-    
+
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f'Cleaning up {self.get_name()}')
 
@@ -143,7 +144,6 @@ class Yolov8Node(LifecycleNode):
         del self.image_qos_profile
 
         return TransitionCallbackReturn.SUCCESS
-
 
     def parse_hypothesis(self, results: Results) -> List[Dict]:
 
