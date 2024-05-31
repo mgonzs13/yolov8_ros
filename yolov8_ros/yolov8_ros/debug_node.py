@@ -20,7 +20,6 @@ import numpy as np
 from typing import Tuple
 
 import rclpy
-from rclpy.node import Node
 from rclpy.duration import Duration
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSHistoryPolicy

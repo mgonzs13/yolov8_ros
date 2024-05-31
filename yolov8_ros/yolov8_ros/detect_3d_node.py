@@ -18,7 +18,6 @@ import numpy as np
 from typing import List, Tuple
 
 import rclpy
-from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSDurabilityPolicy
