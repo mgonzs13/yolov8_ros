@@ -60,7 +60,7 @@ class Detect3DNode(LifecycleNode):
         self.cv_bridge = CvBridge()
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f'Configuring {self.get_name()}')
+        self.get_logger().info(f"Configuring {self.get_name()}")
 
         self.target_frame = self.get_parameter(
             "target_frame").get_parameter_value().string_value
@@ -95,7 +95,7 @@ class Detect3DNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f'Activating {self.get_name()}')
+        self.get_logger().info(f"Activating {self.get_name()}")
 
         # subs
         self.depth_sub = message_filters.Subscriber(
@@ -114,7 +114,7 @@ class Detect3DNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f'Deactivating {self.get_name()}')
+        self.get_logger().info(f"Deactivating {self.get_name()}")
 
         self.destroy_subscription(self.depth_sub.sub)
         self.destroy_subscription(self.depth_info_sub.sub)
@@ -125,7 +125,7 @@ class Detect3DNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f'Cleaning up {self.get_name()}')
+        self.get_logger().info(f"Cleaning up {self.get_name()}")
 
         del self.tf_listener
 

@@ -59,10 +59,10 @@ class Yolov8Node(LifecycleNode):
         self.declare_parameter("image_reliability",
                                QoSReliabilityPolicy.BEST_EFFORT)
 
-        self.get_logger().info('Yolov8Node created')
+        self.get_logger().info("Yolov8 Node created")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f'Configuring {self.get_name()}')
+        self.get_logger().info(f"Configuring {self.get_name()}")
 
         self.model = self.get_parameter(
             "model").get_parameter_value().string_value
@@ -101,7 +101,7 @@ class Yolov8Node(LifecycleNode):
         return response
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f'Activating {self.get_name()}')
+        self.get_logger().info(f"Activating {self.get_name()}")
 
         self.yolo = YOLO(self.model)
         self.yolo.fuse()
@@ -119,10 +119,10 @@ class Yolov8Node(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f'Deactivating {self.get_name()}')
+        self.get_logger().info(f"Deactivating {self.get_name()}")
 
         del self.yolo
-        if 'cuda' in self.device:
+        if "cuda" in self.device:
             self.get_logger().info("Clearing CUDA cache")
             cuda.empty_cache()
 
@@ -134,7 +134,7 @@ class Yolov8Node(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f'Cleaning up {self.get_name()}')
+        self.get_logger().info(f"Cleaning up {self.get_name()}")
 
         self.destroy_publisher(self._pub)
 
