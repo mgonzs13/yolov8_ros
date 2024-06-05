@@ -48,8 +48,8 @@ from std_srvs.srv import SetBool
 
 class Yolov8Node(LifecycleNode):
 
-    def __init__(self, **kwargs) -> None:
-        super().__init__("yolov8_node", **kwargs)
+    def __init__(self) -> None:
+        super().__init__("yolov8_node")
 
         # params
         self.declare_parameter("model", "yolov8m.pt")

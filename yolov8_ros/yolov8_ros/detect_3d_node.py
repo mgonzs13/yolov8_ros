@@ -14,6 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import cv2
 import numpy as np
 from typing import List, Tuple
 
@@ -194,33 +195,50 @@ class Detect3DNode(LifecycleNode):
         detection: Detection
     ) -> BoundingBox3D:
 
-        # crop depth image by the 2d BB
         center_x = int(detection.bbox.center.position.x)
         center_y = int(detection.bbox.center.position.y)
         size_x = int(detection.bbox.size.x)
         size_y = int(detection.bbox.size.y)
 
-        u_min = max(center_x - size_x // 2, 0)
-        u_max = min(center_x + size_x // 2, depth_image.shape[1] - 1)
-        v_min = max(center_y - size_y // 2, 0)
-        v_max = min(center_y + size_y // 2, depth_image.shape[0] - 1)
+        if detection.mask.data:
+            # crop depth image by mask
+            mask_array = np.array([[int(ele.x), int(ele.y)]
+                                   for ele in detection.mask.data])
+            mask = np.zeros(depth_image.shape[:2], dtype=np.uint8)
+            cv2.fillPoly(mask, [np.array(mask_array, dtype=np.int32)], 255)
+            roi = cv2.bitwise_and(depth_image, depth_image, mask=mask)
 
-        roi = depth_image[v_min:v_max, u_min:u_max] / \
-            self.depth_image_units_divisor  # convert to meters
+        else:
+            # crop depth image by the 2d BB
+            u_min = max(center_x - size_x // 2, 0)
+            u_max = min(center_x + size_x // 2, depth_image.shape[1] - 1)
+            v_min = max(center_y - size_y // 2, 0)
+            v_max = min(center_y + size_y // 2, depth_image.shape[0] - 1)
+
+            roi = depth_image[v_min:v_max, u_min:u_max]
+
+        roi = roi / self.depth_image_units_divisor  # convert to meters
         if not np.any(roi):
             return None
 
         # find the z coordinate on the 3D BB
-        bb_center_z_coord = depth_image[int(center_y)][int(
-            center_x)] / self.depth_image_units_divisor
+        if detection.mask.data:
+            roi = roi[roi > 0]
+            bb_center_z_coord = np.median(roi)
+
+        else:
+            bb_center_z_coord = depth_image[int(center_y)][int(
+                center_x)] / self.depth_image_units_divisor
+
         z_diff = np.abs(roi - bb_center_z_coord)
         mask_z = z_diff <= self.maximum_detection_threshold
         if not np.any(mask_z):
             return None
 
-        roi_threshold = roi[mask_z]
-        z_min, z_max = np.min(roi_threshold), np.max(roi_threshold)
+        roi = roi[mask_z]
+        z_min, z_max = np.min(roi), np.max(roi)
         z = (z_max + z_min) / 2
+
         if z == 0:
             return None
 
