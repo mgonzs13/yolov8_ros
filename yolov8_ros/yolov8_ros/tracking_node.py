@@ -14,8 +14,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import numpy as np
-
 import rclpy
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSHistoryPolicy
@@ -25,14 +23,15 @@ from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.lifecycle import LifecycleState
 
+import numpy as np
 import message_filters
 from cv_bridge import CvBridge
 
-from ultralytics.trackers import BOTSORT, BYTETracker
+from ultralytics.engine.results import Boxes
 from ultralytics.trackers.basetrack import BaseTrack
+from ultralytics.trackers import BOTSORT, BYTETracker
 from ultralytics.utils import IterableSimpleNamespace, yaml_load
 from ultralytics.utils.checks import check_requirements, check_yaml
-from ultralytics.engine.results import Boxes
 
 from sensor_msgs.msg import Image
 from yolov8_msgs.msg import Detection

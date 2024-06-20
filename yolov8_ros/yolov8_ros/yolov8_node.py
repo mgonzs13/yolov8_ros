@@ -27,13 +27,14 @@ from rclpy.lifecycle import LifecycleState
 
 from cv_bridge import CvBridge
 
+from torch import cuda
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 from ultralytics.engine.results import Boxes
 from ultralytics.engine.results import Masks
 from ultralytics.engine.results import Keypoints
-from torch import cuda
 
+from std_srvs.srv import SetBool
 from sensor_msgs.msg import Image
 from yolov8_msgs.msg import Point2D
 from yolov8_msgs.msg import BoundingBox2D
@@ -42,8 +43,6 @@ from yolov8_msgs.msg import KeyPoint2D
 from yolov8_msgs.msg import KeyPoint2DArray
 from yolov8_msgs.msg import Detection
 from yolov8_msgs.msg import DetectionArray
-
-from std_srvs.srv import SetBool
 
 
 class Yolov8Node(LifecycleNode):
