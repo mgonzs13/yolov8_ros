@@ -104,7 +104,9 @@ class Yolov8Node(LifecycleNode):
         self.get_logger().info(f"Activating {self.get_name()}")
 
         self.yolo = YOLO(self.model)
-        self.yolo.fuse()
+
+        if "v10" not in self.model:
+            self.yolo.fuse()
 
         # subs
         self._sub = self.create_subscription(
