@@ -27,7 +27,7 @@ from rclpy.lifecycle import LifecycleState
 
 from cv_bridge import CvBridge
 
-from torch import cuda
+import torch
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 from ultralytics.engine.results import Boxes
@@ -125,7 +125,7 @@ class Yolov8Node(LifecycleNode):
         del self.yolo
         if "cuda" in self.device:
             self.get_logger().info("Clearing CUDA cache")
-            cuda.empty_cache()
+            torch.cuda.empty_cache()
 
         self.destroy_subscription(self._sub)
         self._sub = None
