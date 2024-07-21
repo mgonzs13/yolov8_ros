@@ -111,7 +111,7 @@ class DebugNode(LifecycleNode):
 
         return TransitionCallbackReturn.SUCCESS
 
-    def draw_box(self, cv_image: np.array, detection: Detection, color: Tuple[int]) -> np.array:
+    def draw_box(self, cv_image: np.ndarray, detection: Detection, color: Tuple[int]) -> np.ndarray:
 
         # get detection info
         label = detection.class_name
@@ -136,7 +136,7 @@ class DebugNode(LifecycleNode):
 
         return cv_image
 
-    def draw_mask(self, cv_image: np.array, detection: Detection, color: Tuple[int]) -> np.array:
+    def draw_mask(self, cv_image: np.ndarray, detection: Detection, color: Tuple[int]) -> np.ndarray:
 
         mask_msg = detection.mask
         mask_array = np.array([[int(ele.x), int(ele.y)]
@@ -150,7 +150,7 @@ class DebugNode(LifecycleNode):
                                      color=color, thickness=2, lineType=cv2.LINE_AA)
         return cv_image
 
-    def draw_keypoints(self, cv_image: np.array, detection: Detection) -> np.array:
+    def draw_keypoints(self, cv_image: np.ndarray, detection: Detection) -> np.ndarray:
 
         keypoints_msg = detection.keypoints
 
@@ -163,6 +163,9 @@ class DebugNode(LifecycleNode):
 
             cv2.circle(cv_image, (int(kp.point.x), int(kp.point.y)),
                        5, color_k, -1, lineType=cv2.LINE_AA)
+            cv2.putText(cv_image, str(kp.id), (int(kp.point.x), int(kp.point.y)),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1, color_k, 1, cv2.LINE_AA)
 
         def get_pk_pose(kp_id: int) -> Tuple[int]:
             for kp in keypoints_msg.data:
