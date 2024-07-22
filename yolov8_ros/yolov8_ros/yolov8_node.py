@@ -147,14 +147,24 @@ class Yolov8Node(LifecycleNode):
 
         hypothesis_list = []
 
-        box_data: Boxes
-        for box_data in results.boxes:
-            hypothesis = {
-                "class_id": int(box_data.cls),
-                "class_name": self.yolo.names[int(box_data.cls)],
-                "score": float(box_data.conf)
-            }
-            hypothesis_list.append(hypothesis)
+        if results.boxes:
+            box_data: Boxes
+            for box_data in results.boxes:
+                hypothesis = {
+                    "class_id": int(box_data.cls),
+                    "class_name": self.yolo.names[int(box_data.cls)],
+                    "score": float(box_data.conf)
+                }
+                hypothesis_list.append(hypothesis)
+
+        elif results.obb:
+            for i in range(results.obb.cls.shape[0]):
+                hypothesis = {
+                    "class_id": int(results.obb.cls[i]),
+                    "class_name": self.yolo.names[int(results.obb.cls[i])],
+                    "score": float(results.obb.conf[i])
+                }
+                hypothesis_list.append(hypothesis)
 
         return hypothesis_list
 
@@ -162,20 +172,36 @@ class Yolov8Node(LifecycleNode):
 
         boxes_list = []
 
-        box_data: Boxes
-        for box_data in results.boxes:
+        if results.boxes:
+            box_data: Boxes
+            for box_data in results.boxes:
 
-            msg = BoundingBox2D()
+                msg = BoundingBox2D()
 
-            # get boxes values
-            box = box_data.xywh[0]
-            msg.center.position.x = float(box[0])
-            msg.center.position.y = float(box[1])
-            msg.size.x = float(box[2])
-            msg.size.y = float(box[3])
+                # get boxes values
+                box = box_data.xywh[0]
+                msg.center.position.x = float(box[0])
+                msg.center.position.y = float(box[1])
+                msg.size.x = float(box[2])
+                msg.size.y = float(box[3])
 
-            # append msg
-            boxes_list.append(msg)
+                # append msg
+                boxes_list.append(msg)
+
+        elif results.obb:
+            for i in range(results.obb.cls.shape[0]):
+                msg = BoundingBox2D()
+
+                # get boxes values
+                box = results.obb.xywhr[i]
+                msg.center.position.x = float(box[0])
+                msg.center.position.y = float(box[1])
+                msg.center.theta = float(box[4])
+                msg.size.x = float(box[2])
+                msg.size.y = float(box[3])
+
+                # append msg
+                boxes_list.append(msg)
 
         return boxes_list
 
@@ -246,7 +272,7 @@ class Yolov8Node(LifecycleNode):
             )
             results: Results = results[0].cpu()
 
-            if results.boxes:
+            if results.boxes or results.obb:
                 hypothesis = self.parse_hypothesis(results)
                 boxes = self.parse_boxes(results)
 
@@ -263,7 +289,7 @@ class Yolov8Node(LifecycleNode):
 
                 aux_msg = Detection()
 
-                if results.boxes:
+                if results.boxes or results.obb:
                     aux_msg.class_id = hypothesis[i]["class_id"]
                     aux_msg.class_name = hypothesis[i]["class_name"]
                     aux_msg.score = hypothesis[i]["score"]

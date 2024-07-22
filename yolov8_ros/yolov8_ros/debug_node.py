@@ -124,8 +124,30 @@ class DebugNode(LifecycleNode):
         max_pt = (round(box_msg.center.position.x + box_msg.size.x / 2.0),
                   round(box_msg.center.position.y + box_msg.size.y / 2.0))
 
-        # draw box
-        cv2.rectangle(cv_image, min_pt, max_pt, color, 2)
+        # define the four corners of the rectangle
+        rect_pts = np.array([
+            [min_pt[0], min_pt[1]],
+            [max_pt[0], min_pt[1]],
+            [max_pt[0], max_pt[1]],
+            [min_pt[0], max_pt[1]]
+        ])
+
+        # calculate the rotation matrix
+        rotation_matrix = cv2.getRotationMatrix2D(
+            (box_msg.center.position.x, box_msg.center.position.y),
+            -np.rad2deg(box_msg.center.theta),
+            1.0
+        )
+
+        # rotate the corners of the rectangle
+        rect_pts = np.int0(cv2.transform(
+            np.array([rect_pts]), rotation_matrix)[0])
+
+        # Draw the rotated rectangle
+        for i in range(4):
+            pt1 = tuple(rect_pts[i])
+            pt2 = tuple(rect_pts[(i + 1) % 4])
+            cv2.line(cv_image, pt1, pt2, color, 2)
 
         # write text
         label = "{} ({}) ({:.3f})".format(label, str(track_id), score)
