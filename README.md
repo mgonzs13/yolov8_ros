@@ -1,6 +1,6 @@
 # yolov8_ros
 
-ROS 2 wrap for [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) to perform object detection and tracking, instance segmentation and human pose estimation. There are also 3D versions of object detection and human pose estimation based on depth images.
+ROS 2 wrap for [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) to perform object detection and tracking, instance segmentation, human pose estimation and Oriented Bounding Box (OBB). There are also 3D versions of object detection, including instance segmentation, and human pose estimation based on depth images.
 
 ## Installation
 
@@ -86,10 +86,10 @@ This implementation tries to reduce the workload in the unconfigured and inactiv
 
 These are some resource comparisons using the default yolov8m.pt model on a 30fps video stream.
 
-| State       | CPU Usage (i7 12th Gen)  | VRAM Usage  | Bandwidth Usage |
-|-------------|--------------------------|-------------|-----------------|
-| Active   | 40-50% in one core       | 628 MB      | Up to 200 Mbps  |
-| Inactive | ~5-7% in one core        | 338 MB      | 0-20 Kbps       |
+| State    | CPU Usage (i7 12th Gen) | VRAM Usage | Bandwidth Usage |
+| -------- | ----------------------- | ---------- | --------------- |
+| Active   | 40-50% in one core      | 628 MB     | Up to 200 Mbps  |
+| Inactive | ~5-7% in one core       | 338 MB     | 0-20 Kbps       |
 
 ## Demos
 
