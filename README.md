@@ -2,6 +2,13 @@
 
 ROS 2 wrap for [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) to perform object detection and tracking, instance segmentation, human pose estimation and Oriented Bounding Box (OBB). There are also 3D versions of object detection, including instance segmentation, and human pose estimation based on depth images.
 
+## Table of Contents
+
+1. [Installation](#installation)
+2. [Models](#models)
+3. [Usage](#usage)
+4. [Demos](#demos)
+
 ## Installation
 
 ```shell
@@ -13,9 +20,18 @@ $ rosdep install --from-paths src --ignore-src -r -y
 $ colcon build
 ```
 
+## Models
+
+The available models for yolov8_ros are the following:
+
+- [YOLOv8](https://docs.ultralytics.com/models/yolov8/)
+- [YOLOv9](https://docs.ultralytics.com/models/yolov9/)
+- [YOLOv10](https://docs.ultralytics.com/models/yolov10/)
+- [YOLO-NAS](https://docs.ultralytics.com/models/yolo-nas/)
+
 ## Usage
 
-### YOLOv8 / YOLOv9
+### YOLOv8 / YOLOv9 / YOLOv10 / YOLO-NAS
 
 ```shell
 $ ros2 launch yolov8_bringup yolov8.launch.py
