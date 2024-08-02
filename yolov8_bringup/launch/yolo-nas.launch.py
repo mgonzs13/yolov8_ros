@@ -37,7 +37,7 @@ def generate_launch_description():
                 "enable": LaunchConfiguration("enable", default="True"),
                 "threshold": LaunchConfiguration("threshold", default="0.5"),
                 "input_image_topic": LaunchConfiguration("input_image_topic", default="/camera/rgb/image_raw"),
-                "image_reliability": LaunchConfiguration("image_reliability", default="1"),
+                "image_reliability": LaunchConfiguration("image_reliability", default="2"),
                 "namespace": LaunchConfiguration("namespace", default="yolo"),
             }.items(),
         )
