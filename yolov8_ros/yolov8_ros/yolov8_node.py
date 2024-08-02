@@ -28,7 +28,7 @@ from rclpy.lifecycle import LifecycleState
 from cv_bridge import CvBridge
 
 import torch
-from ultralytics import YOLO
+from ultralytics import YOLO, NAS
 from ultralytics.engine.results import Results
 from ultralytics.engine.results import Boxes
 from ultralytics.engine.results import Masks
@@ -51,6 +51,7 @@ class Yolov8Node(LifecycleNode):
         super().__init__("yolov8_node")
 
         # params
+        self.declare_parameter("model_type", "YOLO")
         self.declare_parameter("model", "yolov8m.pt")
         self.declare_parameter("device", "cuda:0")
         self.declare_parameter("threshold", 0.5)
@@ -58,10 +59,18 @@ class Yolov8Node(LifecycleNode):
         self.declare_parameter("image_reliability",
                                QoSReliabilityPolicy.BEST_EFFORT)
 
+        self.type_to_model = {
+            "YOLO": YOLO,
+            "NAS": NAS
+        }
+
         self.get_logger().info("Yolov8 Node created")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"Configuring {self.get_name()}")
+
+        self.model_type = self.get_parameter(
+            "model_type").get_parameter_value().string_value
 
         self.model = self.get_parameter(
             "model").get_parameter_value().string_value
@@ -102,7 +111,7 @@ class Yolov8Node(LifecycleNode):
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"Activating {self.get_name()}")
 
-        self.yolo = YOLO(self.model)
+        self.yolo = self.type_to_model[self.model_type](self.model)
 
         if "v10" not in self.model:
             self.yolo.fuse()
