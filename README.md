@@ -53,6 +53,7 @@ $ ros2 launch yolov8_bringup yolov9.launch.py
 
 #### Parameters
 
+- **model_type**: Ultralytics model type (default: YOLO)
 - **model**: YOLOv8 model (default: yolov8m.pt)
 - **tracker**: Tracker file (default: bytetrack.yaml)
 - **device**: GPU/CUDA (default: cuda:0)
@@ -80,6 +81,7 @@ $ ros2 launch yolov8_bringup yolov8_3d.launch.py
 
 #### Parameters
 
+- **model_type**: Ultralytics model type (default: YOLO)
 - **model**: YOLOv8 model (default: yolov8m.pt)
 - **tracker**: tracker file (default: bytetrack.yaml)
 - **device**: GPU/CUDA (default: cuda:0)

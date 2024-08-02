@@ -25,6 +25,13 @@ def generate_launch_description():
     #
     # ARGS
     #
+    model_type = LaunchConfiguration("model_type")
+    model_type_cmd = DeclareLaunchArgument(
+        "model_type",
+        default_value="YOLO",
+        choices=["YOLO", "NAS"],
+        description="Model type form Ultralytics (YOLO, NAS")
+
     model = LaunchConfiguration("model")
     model_cmd = DeclareLaunchArgument(
         "model",
@@ -129,6 +136,7 @@ def generate_launch_description():
         name="yolov8_node",
         namespace=namespace,
         parameters=[{
+            "model_type": model_type,
             "model": model,
             "device": device,
             "enable": enable,
@@ -183,6 +191,7 @@ def generate_launch_description():
 
     ld = LaunchDescription()
 
+    ld.add_action(model_type_cmd)
     ld.add_action(model_cmd)
     ld.add_action(tracker_cmd)
     ld.add_action(device_cmd)
