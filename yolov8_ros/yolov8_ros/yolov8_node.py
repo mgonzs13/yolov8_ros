@@ -103,18 +103,11 @@ class Yolov8Node(LifecycleNode):
 
         return TransitionCallbackReturn.SUCCESS
 
-    def enable_cb(self, request, response):
-        self.enable = request.data
-        response.success = True
-        return response
-
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"Activating {self.get_name()}")
 
         self.yolo = self.type_to_model[self.model_type](self.model)
-
-        if "v10" not in self.model:
-            self.yolo.fuse()
+        self.yolo.fuse()
 
         # subs
         self._sub = self.create_subscription(
@@ -151,6 +144,11 @@ class Yolov8Node(LifecycleNode):
         del self.image_qos_profile
 
         return TransitionCallbackReturn.SUCCESS
+
+    def enable_cb(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        self.enable = request.data
+        response.success = True
+        return response
 
     def parse_hypothesis(self, results: Results) -> List[Dict]:
 
