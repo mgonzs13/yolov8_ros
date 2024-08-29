@@ -51,7 +51,7 @@ class TrackingNode(LifecycleNode):
         self.cv_bridge = CvBridge()
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"Configuring {self.get_name()}")
+        self.get_logger().info(f"[{self.get_name()}] Configuring...")
 
         tracker_name = self.get_parameter(
             "tracker").get_parameter_value().string_value
@@ -62,10 +62,13 @@ class TrackingNode(LifecycleNode):
         self.tracker = self.create_tracker(tracker_name)
         self._pub = self.create_publisher(DetectionArray, "tracking", 10)
 
+        super().on_configure(state)
+        self.get_logger().info(f"[{self.get_name()}] Configured")
+
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"Activating {self.get_name()}")
+        self.get_logger().info(f"[{self.get_name()}] Activating...")
 
         image_qos_profile = QoSProfile(
             reliability=self.image_reliability,
@@ -84,10 +87,13 @@ class TrackingNode(LifecycleNode):
             (image_sub, detections_sub), 10, 0.5)
         self._synchronizer.registerCallback(self.detections_cb)
 
+        super().on_activate(state)
+        self.get_logger().info(f"[{self.get_name()}] Activated")
+
         return TransitionCallbackReturn.SUCCESS
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"Deactivating {self.get_name()}")
+        self.get_logger().info(f"[{self.get_name()}] Deactivating...")
 
         self.destroy_subscription(self.image_sub.sub)
         self.destroy_subscription(self.detections_sub.sub)
@@ -95,13 +101,25 @@ class TrackingNode(LifecycleNode):
         del self._synchronizer
         self._synchronizer = None
 
+        super().on_deactivate(state)
+        self.get_logger().info(f"[{self.get_name()}] Deactivated")
+
         return TransitionCallbackReturn.SUCCESS
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"Cleaning up {self.get_name()}")
+        self.get_logger().info(f"[{self.get_name()}] Cleaning up...")
 
         del self.tracker
 
+        super().on_cleanup(state)
+        self.get_logger().info(f"[{self.get_name()}] Cleaned up")
+
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f"[{self.get_name()}] Shutting down...")
+        super().on_cleanup(state)
+        self.get_logger().info(f"[{self.get_name()}] Shutted down")
         return TransitionCallbackReturn.SUCCESS
 
     def create_tracker(self, tracker_yaml: str) -> BaseTrack:

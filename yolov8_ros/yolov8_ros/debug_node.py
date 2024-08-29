@@ -55,10 +55,8 @@ class DebugNode(LifecycleNode):
         self.declare_parameter("image_reliability",
                                QoSReliabilityPolicy.BEST_EFFORT)
 
-        self.get_logger().info("Debug node created")
-
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"Configuring {self.get_name()}")
+        self.get_logger().info(f"[{self.get_name()}] Configuring...")
 
         self.image_qos_profile = QoSProfile(
             reliability=self.get_parameter(
@@ -75,10 +73,13 @@ class DebugNode(LifecycleNode):
         self._kp_markers_pub = self.create_publisher(
             MarkerArray, "dgb_kp_markers", 10)
 
+        super().on_configure(state)
+        self.get_logger().info(f"[{self.get_name()}] Configured")
+
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"Activating {self.get_name()}")
+        self.get_logger().info(f"[{self.get_name()}] Activating...")
 
         # subs
         self.image_sub = message_filters.Subscriber(
@@ -90,25 +91,40 @@ class DebugNode(LifecycleNode):
             (self.image_sub, self.detections_sub), 10, 0.5)
         self._synchronizer.registerCallback(self.detections_cb)
 
+        super().on_activate(state)
+        self.get_logger().info(f"[{self.get_name()}] Activated")
+
         return TransitionCallbackReturn.SUCCESS
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"Deactivating {self.get_name()}")
+        self.get_logger().info(f"[{self.get_name()}] Deactivating...")
 
         self.destroy_subscription(self.image_sub.sub)
         self.destroy_subscription(self.detections_sub.sub)
 
         del self._synchronizer
 
+        super().on_deactivate(state)
+        self.get_logger().info(f"[{self.get_name()}] Deactivated")
+
         return TransitionCallbackReturn.SUCCESS
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"Cleaning up {self.get_name()}")
+        self.get_logger().info(f"[{self.get_name()}] Cleaning up...")
 
         self.destroy_publisher(self._dbg_pub)
         self.destroy_publisher(self._bb_markers_pub)
         self.destroy_publisher(self._kp_markers_pub)
 
+        super().on_cleanup(state)
+        self.get_logger().info(f"[{self.get_name()}] Cleaned up")
+
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f"[{self.get_name()}] Shutting down...")
+        super().on_cleanup(state)
+        self.get_logger().info(f"[{self.get_name()}] Shutted down")
         return TransitionCallbackReturn.SUCCESS
 
     def draw_box(self, cv_image: np.ndarray, detection: Detection, color: Tuple[int]) -> np.ndarray:

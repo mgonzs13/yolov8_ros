@@ -64,10 +64,8 @@ class Yolov8Node(LifecycleNode):
             "NAS": NAS
         }
 
-        self.get_logger().info("Yolov8 Node created")
-
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"Configuring {self.get_name()}")
+        self.get_logger().info(f"[{self.get_name()}] Configuring...")
 
         self.model_type = self.get_parameter(
             "model_type").get_parameter_value().string_value
@@ -101,10 +99,13 @@ class Yolov8Node(LifecycleNode):
         )
         self.cv_bridge = CvBridge()
 
+        super().on_configure(state)
+        self.get_logger().info(f"[{self.get_name()}] Configured")
+
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"Activating {self.get_name()}")
+        self.get_logger().info(f"[{self.get_name()}] Activating...")
 
         self.yolo = self.type_to_model[self.model_type](self.model)
         self.yolo.fuse()
@@ -118,11 +119,12 @@ class Yolov8Node(LifecycleNode):
         )
 
         super().on_activate(state)
+        self.get_logger().info(f"[{self.get_name()}] Activated")
 
         return TransitionCallbackReturn.SUCCESS
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"Deactivating {self.get_name()}")
+        self.get_logger().info(f"[{self.get_name()}] Deactivating...")
 
         del self.yolo
         if "cuda" in self.device:
@@ -133,16 +135,26 @@ class Yolov8Node(LifecycleNode):
         self._sub = None
 
         super().on_deactivate(state)
+        self.get_logger().info(f"[{self.get_name()}] Deactivated")
 
         return TransitionCallbackReturn.SUCCESS
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"Cleaning up {self.get_name()}")
+        self.get_logger().info(f"[{self.get_name()}] Cleaning up...")
 
         self.destroy_publisher(self._pub)
 
         del self.image_qos_profile
 
+        super().on_cleanup(state)
+        self.get_logger().info(f"[{self.get_name()}] Cleaned up")
+
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f"[{self.get_name()}] Shutting down...")
+        super().on_cleanup(state)
+        self.get_logger().info(f"[{self.get_name()}] Shutted down")
         return TransitionCallbackReturn.SUCCESS
 
     def enable_cb(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
