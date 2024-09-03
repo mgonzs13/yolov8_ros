@@ -308,17 +308,17 @@ class Yolov8Node(LifecycleNode):
 
                 aux_msg = Detection()
 
-                if results.boxes or results.obb:
+                if results.boxes or results.obb and hypothesis and boxes:
                     aux_msg.class_id = hypothesis[i]["class_id"]
                     aux_msg.class_name = hypothesis[i]["class_name"]
                     aux_msg.score = hypothesis[i]["score"]
 
                     aux_msg.bbox = boxes[i]
 
-                if results.masks:
+                if results.masks and masks:
                     aux_msg.mask = masks[i]
 
-                if results.keypoints:
+                if results.keypoints and keypoints:
                     aux_msg.keypoints = keypoints[i]
 
                 detections_msg.detections.append(aux_msg)
