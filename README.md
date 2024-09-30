@@ -27,11 +27,12 @@ The available models for yolov8_ros are the following:
 - [YOLOv8](https://docs.ultralytics.com/models/yolov8/)
 - [YOLOv9](https://docs.ultralytics.com/models/yolov9/)
 - [YOLOv10](https://docs.ultralytics.com/models/yolov10/)
+- [YOLOv11](https://docs.ultralytics.com/models/yolov10/)
 - [YOLO-NAS](https://docs.ultralytics.com/models/yolo-nas/)
 
 ## Usage
 
-### YOLOv8 / YOLOv9 / YOLOv10 / YOLO-NAS
+### YOLOv8 / YOLOv9 / YOLOv10 / YOLOv11 / YOLO-NAS
 
 ```shell
 $ ros2 launch yolov8_bringup yolov8.launch.py
@@ -39,6 +40,18 @@ $ ros2 launch yolov8_bringup yolov8.launch.py
 
 ```shell
 $ ros2 launch yolov8_bringup yolov9.launch.py
+```
+
+```shell
+$ ros2 launch yolov8_bringup yolov10.launch.py
+```
+
+```shell
+$ ros2 launch yolov8_bringup yolov11.launch.py
+```
+
+```shell
+$ ros2 launch yolov8_bringup yolo-nas.launch.py
 ```
 
 <p align="center">
