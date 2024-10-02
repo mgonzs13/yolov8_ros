@@ -24,6 +24,11 @@ $ colcon build
 
 The available models for yolov8_ros are the following:
 
+- [YOLOv3](https://docs.ultralytics.com/models/yolov3/)
+- [YOLOv4](https://docs.ultralytics.com/models/yolov4/)
+- [YOLOv5](https://docs.ultralytics.com/models/yolov5/)
+- [YOLOv6](https://docs.ultralytics.com/models/yolov6/)
+- [YOLOv7](https://docs.ultralytics.com/models/yolov7/)
 - [YOLOv8](https://docs.ultralytics.com/models/yolov8/)
 - [YOLOv9](https://docs.ultralytics.com/models/yolov9/)
 - [YOLOv10](https://docs.ultralytics.com/models/yolov10/)
@@ -32,7 +37,11 @@ The available models for yolov8_ros are the following:
 
 ## Usage
 
-### YOLOv8 / YOLOv9 / YOLOv10 / YOLOv11 / YOLO-NAS
+### YOLOv5 / YOLOv8 / YOLOv9 / YOLOv10 / YOLOv11 / YOLO-NAS
+
+```shell
+$ ros2 launch yolov8_bringup yolov5.launch.py
+```
 
 ```shell
 $ ros2 launch yolov8_bringup yolov8.launch.py
