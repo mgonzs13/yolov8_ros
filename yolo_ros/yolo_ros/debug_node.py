@@ -130,7 +130,7 @@ class DebugNode(LifecycleNode):
     def draw_box(self, cv_image: np.ndarray, detection: Detection, color: Tuple[int]) -> np.ndarray:
 
         # get detection info
-        label = detection.class_name
+        class_name = detection.class_name
         score = detection.score
         box_msg: BoundingBox2D = detection.bbox
         track_id = detection.id
@@ -166,7 +166,7 @@ class DebugNode(LifecycleNode):
             cv2.line(cv_image, pt1, pt2, color, 2)
 
         # write text
-        label = f"{label}"
+        label = f"{class_name}"
         label += f" ({track_id})" if track_id else ""
         label += " ({:.3f})".format(score)
         pos = (min_pt[0] + 5, min_pt[1] + 25)
@@ -298,15 +298,15 @@ class DebugNode(LifecycleNode):
         for detection in detection_msg.detections:
 
             # random color
-            label = detection.class_name
+            class_name = detection.class_name
 
-            if label not in self._class_to_color:
+            if class_name not in self._class_to_color:
                 r = random.randint(0, 255)
                 g = random.randint(0, 255)
                 b = random.randint(0, 255)
-                self._class_to_color[label] = (r, g, b)
+                self._class_to_color[class_name] = (r, g, b)
 
-            color = self._class_to_color[label]
+            color = self._class_to_color[class_name]
 
             cv_image = self.draw_box(cv_image, detection, color)
             cv_image = self.draw_mask(cv_image, detection, color)
