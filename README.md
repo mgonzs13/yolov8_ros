@@ -37,6 +37,9 @@ The available models for yolo_ros are the following:
 
 ## Usage
 
+<details>
+<summary>Click to expand</summary>
+
 ### YOLOv5
 
 ```shell
@@ -72,6 +75,8 @@ $ ros2 launch yolo_bringup yolov11.launch.py
 ```shell
 $ ros2 launch yolo_bringup yolo-nas.launch.py
 ```
+
+</details>
 
 <p align="center">
   <img src="./docs/rqt_graph_yolov8.png" width="100%" />
@@ -126,7 +131,7 @@ $ ros2 launch yolo_bringup yolov8.launch.py use_3d:=True
 ```
 
 <p align="center">
-  <img src="./docs/rqt_graph_yolo_3d.png" width="100%" />
+  <img src="./docs/rqt_graph_yolov8_3d.png" width="100%" />
 </p>
 
 ## Demos
