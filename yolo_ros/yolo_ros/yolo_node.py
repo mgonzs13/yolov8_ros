@@ -28,7 +28,7 @@ from rclpy.lifecycle import LifecycleState
 from cv_bridge import CvBridge
 
 import torch
-from ultralytics import YOLO, NAS
+from ultralytics import YOLO, NAS, YOLOWorld
 from ultralytics.engine.results import Results
 from ultralytics.engine.results import Boxes
 from ultralytics.engine.results import Masks
@@ -43,6 +43,7 @@ from yolo_msgs.msg import KeyPoint2D
 from yolo_msgs.msg import KeyPoint2DArray
 from yolo_msgs.msg import Detection
 from yolo_msgs.msg import DetectionArray
+from yolo_msgs.srv import SetClasses
 
 
 class YoloNode(LifecycleNode):
@@ -61,7 +62,8 @@ class YoloNode(LifecycleNode):
 
         self.type_to_model = {
             "YOLO": YOLO,
-            "NAS": NAS
+            "NAS": NAS,
+            "World": YOLOWorld
         }
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
@@ -94,9 +96,6 @@ class YoloNode(LifecycleNode):
 
         self._pub = self.create_lifecycle_publisher(
             DetectionArray, "detections", 10)
-        self._srv = self.create_service(
-            SetBool, "enable", self.enable_cb
-        )
         self.cv_bridge = CvBridge()
 
         super().on_configure(state)
@@ -110,7 +109,13 @@ class YoloNode(LifecycleNode):
         self.yolo = self.type_to_model[self.model_type](self.model)
         self.yolo.fuse()
 
-        # subs
+        self._enable_srv = self.create_service(
+            SetBool, "enable", self.enable_cb)
+
+        if isinstance(self.yolo, YOLOWorld):
+            self._set_classes_srv = self.create_service(
+                SetClasses, "set_classes", self.set_classes_cb)
+
         self._sub = self.create_subscription(
             Image,
             "image_raw",
@@ -130,6 +135,13 @@ class YoloNode(LifecycleNode):
         if "cuda" in self.device:
             self.get_logger().info("Clearing CUDA cache")
             torch.cuda.empty_cache()
+
+        self.destroy_service(self._enable_srv)
+        self._enable_srv = None
+
+        if isinstance(self.yolo, YOLOWorld):
+            self.destroy_service(self._set_classes_srv)
+            self._set_classes_srv = None
 
         self.destroy_subscription(self._sub)
         self._sub = None
@@ -329,6 +341,16 @@ class YoloNode(LifecycleNode):
 
             del results
             del cv_image
+
+    def set_classes_cb(
+        self,
+        req: SetClasses.Request,
+        res: SetClasses.Response
+    ) -> SetClasses.Response:
+        self.get_logger().info(f"Setting classes: {req.classes}")
+        self.yolo.set_classes(req.classes)
+        self.get_logger().info(f"New classes: {self.yolo.names}")
+        return res
 
 
 def main():

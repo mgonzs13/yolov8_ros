@@ -32,7 +32,7 @@ def generate_launch_description():
         model_type_cmd = DeclareLaunchArgument(
             "model_type",
             default_value="YOLO",
-            choices=["YOLO", "NAS"],
+            choices=["YOLO", "NAS", "World"],
             description="Model type form Ultralytics (YOLO, NAS")
 
         model = LaunchConfiguration("model")
