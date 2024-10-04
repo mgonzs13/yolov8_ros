@@ -28,7 +28,7 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(get_package_share_directory(
-                    "yolo_bringup"), "launch", "yolo-base.launch.py")),
+                    "yolo_bringup"), "launch", "yolo.launch.py")),
             launch_arguments={
                 "model_type": "World",
                 "model": LaunchConfiguration("model", default="yolov8s-worldv2.pt"),
