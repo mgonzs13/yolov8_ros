@@ -65,6 +65,54 @@ def generate_launch_description():
             default_value="0.5",
             description="Minimum probability of a detection to be published")
 
+        iou = LaunchConfiguration("iou")
+        iou_cmd = DeclareLaunchArgument(
+            "iou",
+            default_value="0.7",
+            description="IoU threshold")
+
+        imgsz_height = LaunchConfiguration("imgsz_height")
+        imgsz_height_cmd = DeclareLaunchArgument(
+            "imgsz_height",
+            default_value="640",
+            description="Image height for inference")
+
+        imgsz_width = LaunchConfiguration("imgsz_width")
+        imgsz_width_cmd = DeclareLaunchArgument(
+            "imgsz_width",
+            default_value="640",
+            description="Image width for inference")
+
+        half = LaunchConfiguration("half")
+        half_cmd = DeclareLaunchArgument(
+            "half",
+            default_value="False",
+            description="Whether to enable half-precision (FP16) inference speeding up model inference with minimal impact on accuracy")
+
+        max_det = LaunchConfiguration("max_det")
+        max_det_cmd = DeclareLaunchArgument(
+            "max_det",
+            default_value="300",
+            description="Maximum number of detections allowed per image")
+
+        augment = LaunchConfiguration("augment")
+        augment_cmd = DeclareLaunchArgument(
+            "augment",
+            default_value="False",
+            description="Whether to enable test-time augmentation (TTA) for predictions improving detection robustness at the cost of speed")
+
+        agnostic_nms = LaunchConfiguration("agnostic_nms")
+        agnostic_nms_cmd = DeclareLaunchArgument(
+            "agnostic_nms",
+            default_value="False",
+            description="Whether to enable class-agnostic Non-Maximum Suppression (NMS) merging overlapping boxes of different classes")
+
+        retina_masks = LaunchConfiguration("retina_masks")
+        retina_masks_cmd = DeclareLaunchArgument(
+            "retina_masks",
+            default_value="False",
+            description="Whether to use high-resolution segmentation masks if available in the model, enhancing mask quality for segmentation")
+
         input_image_topic = LaunchConfiguration("input_image_topic")
         input_image_topic_cmd = DeclareLaunchArgument(
             "input_image_topic",
@@ -160,6 +208,14 @@ def generate_launch_description():
                 "device": device,
                 "enable": enable,
                 "threshold": threshold,
+                "iou": iou,
+                "imgsz_height": imgsz_height,
+                "imgsz_width": imgsz_width,
+                "half": half,
+                "max_det": max_det,
+                "augment": augment,
+                "agnostic_nms": agnostic_nms,
+                "retina_masks": retina_masks,
                 "image_reliability": image_reliability,
             }],
             remappings=[("image_raw", input_image_topic)]
@@ -218,6 +274,14 @@ def generate_launch_description():
             device_cmd,
             enable_cmd,
             threshold_cmd,
+            iou_cmd,
+            imgsz_height_cmd,
+            imgsz_width_cmd,
+            half_cmd,
+            max_det_cmd,
+            augment_cmd,
+            agnostic_nms_cmd,
+            retina_masks_cmd,
 
             input_image_topic_cmd,
             image_reliability_cmd,

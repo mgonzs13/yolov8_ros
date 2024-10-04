@@ -55,7 +55,17 @@ class YoloNode(LifecycleNode):
         self.declare_parameter("model_type", "YOLO")
         self.declare_parameter("model", "yolov8m.pt")
         self.declare_parameter("device", "cuda:0")
+
         self.declare_parameter("threshold", 0.5)
+        self.declare_parameter("iou", 0.5)
+        self.declare_parameter("imgsz_height", 640)
+        self.declare_parameter("imgsz_width", 640)
+        self.declare_parameter("half", False)
+        self.declare_parameter("max_det", 300)
+        self.declare_parameter("augment", False)
+        self.declare_parameter("agnostic_nms", False)
+        self.declare_parameter("retina_masks", False)
+
         self.declare_parameter("enable", True)
         self.declare_parameter("image_reliability",
                                QoSReliabilityPolicy.BEST_EFFORT)
@@ -69,24 +79,41 @@ class YoloNode(LifecycleNode):
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"[{self.get_name()}] Configuring...")
 
+        # model params
         self.model_type = self.get_parameter(
             "model_type").get_parameter_value().string_value
-
         self.model = self.get_parameter(
             "model").get_parameter_value().string_value
-
         self.device = self.get_parameter(
             "device").get_parameter_value().string_value
 
+        # inference params
         self.threshold = self.get_parameter(
             "threshold").get_parameter_value().double_value
+        self.iou = self.get_parameter(
+            "iou").get_parameter_value().double_value
+        self.imgsz_height = self.get_parameter(
+            "imgsz_height").get_parameter_value().integer_value
+        self.imgsz_width = self.get_parameter(
+            "imgsz_width").get_parameter_value().integer_value
+        self.half = self.get_parameter(
+            "half").get_parameter_value().bool_value
+        self.max_det = self.get_parameter(
+            "max_det").get_parameter_value().integer_value
+        self.augment = self.get_parameter(
+            "augment").get_parameter_value().bool_value
+        self.agnostic_nms = self.get_parameter(
+            "agnostic_nms").get_parameter_value().bool_value
+        self.retina_masks = self.get_parameter(
+            "retina_masks").get_parameter_value().bool_value
 
+        # ros params
         self.enable = self.get_parameter(
             "enable").get_parameter_value().bool_value
-
         self.reliability = self.get_parameter(
             "image_reliability").get_parameter_value().integer_value
 
+        # detection pub
         self.image_qos_profile = QoSProfile(
             reliability=self.reliability,
             history=QoSHistoryPolicy.KEEP_LAST,
@@ -299,6 +326,13 @@ class YoloNode(LifecycleNode):
                 verbose=False,
                 stream=False,
                 conf=self.threshold,
+                iou=self.iou,
+                imgsz=(self.imgsz_height, self.imgsz_width),
+                half=self.half,
+                max_det=self.max_det,
+                augment=self.augment,
+                agnostic_nms=self.agnostic_nms,
+                retina_masks=self.retina_masks,
                 device=self.device
             )
             results: Results = results[0].cpu()
