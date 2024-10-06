@@ -1,3 +1,19 @@
+> ## 🚨 **Repository Name Change Announcement** 🚨
+> 
+> We are planning to rename this repository from **yolov8_ros** to **yolo_ros** on **31-10-2024**.
+>
+> The repository is renamed since more YOLO models are supported in this tool, not only YOLOv8.
+>
+> Check out the updates in the [yolo_ros branch](https://github.com/mgonzs13/yolov8_ros/tree/yolo_ros).
+>
+> Please update your local repository, dependencies, scripts or tools that rely on the repository URL.
+> 
+> After the name change, update your local repository URL:
+> 
+> ```bash
+> git remote set-url origin https://github.com/mgonzs13/yolo_ros.git
+> ```
+
 # yolov8_ros
 
 ROS 2 wrap for [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) to perform object detection and tracking, instance segmentation, human pose estimation and Oriented Bounding Box (OBB). There are also 3D versions of object detection, including instance segmentation, and human pose estimation based on depth images.
