@@ -5,9 +5,10 @@ ROS 2 wrap for YOLO models from [Ultralytics](https://github.com/ultralytics/ult
 ## Table of Contents
 
 1. [Installation](#installation)
-2. [Models](#models)
-3. [Usage](#usage)
-4. [Demos](#demos)
+2. [Docker](#docker)
+3. [Models](#models)
+4. [Usage](#usage)
+5. [Demos](#demos)
 
 ## Installation
 
@@ -18,6 +19,26 @@ $ pip3 install -r yolo_ros/requirements.txt
 $ cd ~/ros2_ws
 $ rosdep install --from-paths src --ignore-src -r -y
 $ colcon build
+```
+
+## Docker
+
+Build the yolo_ros docker:
+
+```shell
+$ docker build . yolo_ros
+```
+
+Running the docker container:
+
+```shell
+$ docker run -it --rm yolo_ros
+```
+
+Running the docker with GPU support:
+
+```shell
+$ docker run -it --rm --gpus all yolo_ros
 ```
 
 ## Models
