@@ -10,10 +10,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: autopep8
-        uses: peter-evans/autopep8@v2
+      - uses: datadog/action-py-black-formatter@v2.1
         with:
-          args: --recursive --in-place .
+          check_mode: "true"
 
   build:
     runs-on: ubuntu-latest

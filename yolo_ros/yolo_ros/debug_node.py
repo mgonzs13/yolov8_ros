@@ -52,26 +52,24 @@ class DebugNode(LifecycleNode):
         self.cv_bridge = CvBridge()
 
         # params
-        self.declare_parameter("image_reliability",
-                               QoSReliabilityPolicy.BEST_EFFORT)
+        self.declare_parameter("image_reliability", QoSReliabilityPolicy.BEST_EFFORT)
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"[{self.get_name()}] Configuring...")
 
         self.image_qos_profile = QoSProfile(
-            reliability=self.get_parameter(
-                "image_reliability").get_parameter_value().integer_value,
+            reliability=self.get_parameter("image_reliability")
+            .get_parameter_value()
+            .integer_value,
             history=QoSHistoryPolicy.KEEP_LAST,
             durability=QoSDurabilityPolicy.VOLATILE,
-            depth=1
+            depth=1,
         )
 
         # pubs
         self._dbg_pub = self.create_publisher(Image, "dbg_image", 10)
-        self._bb_markers_pub = self.create_publisher(
-            MarkerArray, "dgb_bb_markers", 10)
-        self._kp_markers_pub = self.create_publisher(
-            MarkerArray, "dgb_kp_markers", 10)
+        self._bb_markers_pub = self.create_publisher(MarkerArray, "dgb_bb_markers", 10)
+        self._kp_markers_pub = self.create_publisher(MarkerArray, "dgb_kp_markers", 10)
 
         super().on_configure(state)
         self.get_logger().info(f"[{self.get_name()}] Configured")
@@ -83,12 +81,15 @@ class DebugNode(LifecycleNode):
 
         # subs
         self.image_sub = message_filters.Subscriber(
-            self, Image, "image_raw", qos_profile=self.image_qos_profile)
+            self, Image, "image_raw", qos_profile=self.image_qos_profile
+        )
         self.detections_sub = message_filters.Subscriber(
-            self, DetectionArray, "detections", qos_profile=10)
+            self, DetectionArray, "detections", qos_profile=10
+        )
 
         self._synchronizer = message_filters.ApproximateTimeSynchronizer(
-            (self.image_sub, self.detections_sub), 10, 0.5)
+            (self.image_sub, self.detections_sub), 10, 0.5
+        )
         self._synchronizer.registerCallback(self.detections_cb)
 
         super().on_activate(state)
@@ -128,10 +129,7 @@ class DebugNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def draw_box(
-        self,
-        cv_image: np.ndarray,
-        detection: Detection,
-        color: Tuple[int]
+        self, cv_image: np.ndarray, detection: Detection, color: Tuple[int]
     ) -> np.ndarray:
 
         # get detection info
@@ -140,29 +138,34 @@ class DebugNode(LifecycleNode):
         box_msg: BoundingBox2D = detection.bbox
         track_id = detection.id
 
-        min_pt = (round(box_msg.center.position.x - box_msg.size.x / 2.0),
-                  round(box_msg.center.position.y - box_msg.size.y / 2.0))
-        max_pt = (round(box_msg.center.position.x + box_msg.size.x / 2.0),
-                  round(box_msg.center.position.y + box_msg.size.y / 2.0))
+        min_pt = (
+            round(box_msg.center.position.x - box_msg.size.x / 2.0),
+            round(box_msg.center.position.y - box_msg.size.y / 2.0),
+        )
+        max_pt = (
+            round(box_msg.center.position.x + box_msg.size.x / 2.0),
+            round(box_msg.center.position.y + box_msg.size.y / 2.0),
+        )
 
         # define the four corners of the rectangle
-        rect_pts = np.array([
-            [min_pt[0], min_pt[1]],
-            [max_pt[0], min_pt[1]],
-            [max_pt[0], max_pt[1]],
-            [min_pt[0], max_pt[1]]
-        ])
+        rect_pts = np.array(
+            [
+                [min_pt[0], min_pt[1]],
+                [max_pt[0], min_pt[1]],
+                [max_pt[0], max_pt[1]],
+                [min_pt[0], max_pt[1]],
+            ]
+        )
 
         # calculate the rotation matrix
         rotation_matrix = cv2.getRotationMatrix2D(
             (box_msg.center.position.x, box_msg.center.position.y),
             -np.rad2deg(box_msg.center.theta),
-            1.0
+            1.0,
         )
 
         # rotate the corners of the rectangle
-        rect_pts = np.int0(cv2.transform(
-            np.array([rect_pts]), rotation_matrix)[0])
+        rect_pts = np.int0(cv2.transform(np.array([rect_pts]), rotation_matrix)[0])
 
         # Draw the rotated rectangle
         for i in range(4):
@@ -176,21 +179,16 @@ class DebugNode(LifecycleNode):
         label += " ({:.3f})".format(score)
         pos = (min_pt[0] + 5, min_pt[1] + 25)
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(cv_image, label, pos, font,
-                    1, color, 1, cv2.LINE_AA)
+        cv2.putText(cv_image, label, pos, font, 1, color, 1, cv2.LINE_AA)
 
         return cv_image
 
     def draw_mask(
-        self,
-        cv_image: np.ndarray,
-        detection: Detection,
-        color: Tuple[int]
+        self, cv_image: np.ndarray, detection: Detection, color: Tuple[int]
     ) -> np.ndarray:
 
         mask_msg = detection.mask
-        mask_array = np.array([[int(ele.x), int(ele.y)]
-                              for ele in mask_msg.data])
+        mask_array = np.array([[int(ele.x), int(ele.y)] for ele in mask_msg.data])
 
         if mask_msg.data:
             layer = cv_image.copy()
@@ -202,15 +200,11 @@ class DebugNode(LifecycleNode):
                 isClosed=True,
                 color=color,
                 thickness=2,
-                lineType=cv2.LINE_AA
+                lineType=cv2.LINE_AA,
             )
         return cv_image
 
-    def draw_keypoints(
-        self,
-        cv_image: np.ndarray,
-        detection: Detection
-    ) -> np.ndarray:
+    def draw_keypoints(self, cv_image: np.ndarray, detection: Detection) -> np.ndarray:
 
         keypoints_msg = detection.keypoints
 
@@ -218,14 +212,30 @@ class DebugNode(LifecycleNode):
 
         kp: KeyPoint2D
         for kp in keypoints_msg.data:
-            color_k = [int(x) for x in ann.kpt_color[kp.id - 1]
-                       ] if len(keypoints_msg.data) == 17 else colors(kp.id - 1)
+            color_k = (
+                [int(x) for x in ann.kpt_color[kp.id - 1]]
+                if len(keypoints_msg.data) == 17
+                else colors(kp.id - 1)
+            )
 
-            cv2.circle(cv_image, (int(kp.point.x), int(kp.point.y)),
-                       5, color_k, -1, lineType=cv2.LINE_AA)
-            cv2.putText(cv_image, str(kp.id), (int(kp.point.x), int(kp.point.y)),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        1, color_k, 1, cv2.LINE_AA)
+            cv2.circle(
+                cv_image,
+                (int(kp.point.x), int(kp.point.y)),
+                5,
+                color_k,
+                -1,
+                lineType=cv2.LINE_AA,
+            )
+            cv2.putText(
+                cv_image,
+                str(kp.id),
+                (int(kp.point.x), int(kp.point.y)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                color_k,
+                1,
+                cv2.LINE_AA,
+            )
 
         def get_pk_pose(kp_id: int) -> Tuple[int]:
             for kp in keypoints_msg.data:
@@ -244,16 +254,12 @@ class DebugNode(LifecycleNode):
                     kp2_pos,
                     [int(x) for x in ann.limb_color[i]],
                     thickness=2,
-                    lineType=cv2.LINE_AA
+                    lineType=cv2.LINE_AA,
                 )
 
         return cv_image
 
-    def create_bb_marker(
-        self,
-        detection: Detection,
-        color: Tuple[int]
-    ) -> Marker:
+    def create_bb_marker(self, detection: Detection, color: Tuple[int]) -> Marker:
 
         bbox3d = detection.bbox3d
 
@@ -318,11 +324,7 @@ class DebugNode(LifecycleNode):
 
         return marker
 
-    def detections_cb(
-        self,
-        img_msg: Image,
-        detection_msg: DetectionArray
-    ) -> None:
+    def detections_cb(self, img_msg: Image, detection_msg: DetectionArray) -> None:
 
         cv_image = self.cv_bridge.imgmsg_to_cv2(img_msg)
         bb_marker_array = MarkerArray()
@@ -362,8 +364,8 @@ class DebugNode(LifecycleNode):
 
         # publish dbg image
         self._dbg_pub.publish(
-            self.cv_bridge.cv2_to_imgmsg(
-                cv_image, encoding=img_msg.encoding))
+            self.cv_bridge.cv2_to_imgmsg(cv_image, encoding=img_msg.encoding)
+        )
         self._bb_markers_pub.publish(bb_marker_array)
         self._kp_markers_pub.publish(kp_marker_array)
 

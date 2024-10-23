@@ -67,62 +67,56 @@ class YoloNode(LifecycleNode):
         self.declare_parameter("retina_masks", False)
 
         self.declare_parameter("enable", True)
-        self.declare_parameter("image_reliability",
-                               QoSReliabilityPolicy.BEST_EFFORT)
+        self.declare_parameter("image_reliability", QoSReliabilityPolicy.BEST_EFFORT)
 
-        self.type_to_model = {
-            "YOLO": YOLO,
-            "NAS": NAS,
-            "World": YOLOWorld
-        }
+        self.type_to_model = {"YOLO": YOLO, "NAS": NAS, "World": YOLOWorld}
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"[{self.get_name()}] Configuring...")
 
         # model params
-        self.model_type = self.get_parameter(
-            "model_type").get_parameter_value().string_value
-        self.model = self.get_parameter(
-            "model").get_parameter_value().string_value
-        self.device = self.get_parameter(
-            "device").get_parameter_value().string_value
+        self.model_type = (
+            self.get_parameter("model_type").get_parameter_value().string_value
+        )
+        self.model = self.get_parameter("model").get_parameter_value().string_value
+        self.device = self.get_parameter("device").get_parameter_value().string_value
 
         # inference params
-        self.threshold = self.get_parameter(
-            "threshold").get_parameter_value().double_value
-        self.iou = self.get_parameter(
-            "iou").get_parameter_value().double_value
-        self.imgsz_height = self.get_parameter(
-            "imgsz_height").get_parameter_value().integer_value
-        self.imgsz_width = self.get_parameter(
-            "imgsz_width").get_parameter_value().integer_value
-        self.half = self.get_parameter(
-            "half").get_parameter_value().bool_value
-        self.max_det = self.get_parameter(
-            "max_det").get_parameter_value().integer_value
-        self.augment = self.get_parameter(
-            "augment").get_parameter_value().bool_value
-        self.agnostic_nms = self.get_parameter(
-            "agnostic_nms").get_parameter_value().bool_value
-        self.retina_masks = self.get_parameter(
-            "retina_masks").get_parameter_value().bool_value
+        self.threshold = (
+            self.get_parameter("threshold").get_parameter_value().double_value
+        )
+        self.iou = self.get_parameter("iou").get_parameter_value().double_value
+        self.imgsz_height = (
+            self.get_parameter("imgsz_height").get_parameter_value().integer_value
+        )
+        self.imgsz_width = (
+            self.get_parameter("imgsz_width").get_parameter_value().integer_value
+        )
+        self.half = self.get_parameter("half").get_parameter_value().bool_value
+        self.max_det = self.get_parameter("max_det").get_parameter_value().integer_value
+        self.augment = self.get_parameter("augment").get_parameter_value().bool_value
+        self.agnostic_nms = (
+            self.get_parameter("agnostic_nms").get_parameter_value().bool_value
+        )
+        self.retina_masks = (
+            self.get_parameter("retina_masks").get_parameter_value().bool_value
+        )
 
         # ros params
-        self.enable = self.get_parameter(
-            "enable").get_parameter_value().bool_value
-        self.reliability = self.get_parameter(
-            "image_reliability").get_parameter_value().integer_value
+        self.enable = self.get_parameter("enable").get_parameter_value().bool_value
+        self.reliability = (
+            self.get_parameter("image_reliability").get_parameter_value().integer_value
+        )
 
         # detection pub
         self.image_qos_profile = QoSProfile(
             reliability=self.reliability,
             history=QoSHistoryPolicy.KEEP_LAST,
             durability=QoSDurabilityPolicy.VOLATILE,
-            depth=1
+            depth=1,
         )
 
-        self._pub = self.create_lifecycle_publisher(
-            DetectionArray, "detections", 10)
+        self._pub = self.create_lifecycle_publisher(DetectionArray, "detections", 10)
         self.cv_bridge = CvBridge()
 
         super().on_configure(state)
@@ -136,18 +130,15 @@ class YoloNode(LifecycleNode):
         self.yolo = self.type_to_model[self.model_type](self.model)
         self.yolo.fuse()
 
-        self._enable_srv = self.create_service(
-            SetBool, "enable", self.enable_cb)
+        self._enable_srv = self.create_service(SetBool, "enable", self.enable_cb)
 
         if isinstance(self.yolo, YOLOWorld):
             self._set_classes_srv = self.create_service(
-                SetClasses, "set_classes", self.set_classes_cb)
+                SetClasses, "set_classes", self.set_classes_cb
+            )
 
         self._sub = self.create_subscription(
-            Image,
-            "image_raw",
-            self.image_cb,
-            self.image_qos_profile
+            Image, "image_raw", self.image_cb, self.image_qos_profile
         )
 
         super().on_activate(state)
@@ -197,9 +188,7 @@ class YoloNode(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def enable_cb(
-        self,
-        request: SetBool.Request,
-        response: SetBool.Response
+        self, request: SetBool.Request, response: SetBool.Response
     ) -> SetBool.Response:
         self.enable = request.data
         response.success = True
@@ -215,7 +204,7 @@ class YoloNode(LifecycleNode):
                 hypothesis = {
                     "class_id": int(box_data.cls),
                     "class_name": self.yolo.names[int(box_data.cls)],
-                    "score": float(box_data.conf)
+                    "score": float(box_data.conf),
                 }
                 hypothesis_list.append(hypothesis)
 
@@ -224,7 +213,7 @@ class YoloNode(LifecycleNode):
                 hypothesis = {
                     "class_id": int(results.obb.cls[i]),
                     "class_name": self.yolo.names[int(results.obb.cls[i])],
-                    "score": float(results.obb.conf[i])
+                    "score": float(results.obb.conf[i]),
                 }
                 hypothesis_list.append(hypothesis)
 
@@ -282,8 +271,10 @@ class YoloNode(LifecycleNode):
 
             msg = Mask()
 
-            msg.data = [create_point2d(float(ele[0]), float(ele[1]))
-                        for ele in mask.xy[0].tolist()]
+            msg.data = [
+                create_point2d(float(ele[0]), float(ele[1]))
+                for ele in mask.xy[0].tolist()
+            ]
             msg.height = results.orig_img.shape[0]
             msg.width = results.orig_img.shape[1]
 
@@ -303,8 +294,7 @@ class YoloNode(LifecycleNode):
             if points.conf is None:
                 continue
 
-            for kp_id, (p, conf) in enumerate(
-                    zip(points.xy[0], points.conf[0])):
+            for kp_id, (p, conf) in enumerate(zip(points.xy[0], points.conf[0])):
 
                 if conf >= self.threshold:
                     msg = KeyPoint2D()
@@ -338,7 +328,7 @@ class YoloNode(LifecycleNode):
                 augment=self.augment,
                 agnostic_nms=self.agnostic_nms,
                 retina_masks=self.retina_masks,
-                device=self.device
+                device=self.device,
             )
             results: Results = results[0].cpu()
 
@@ -382,9 +372,7 @@ class YoloNode(LifecycleNode):
             del cv_image
 
     def set_classes_cb(
-        self,
-        req: SetClasses.Request,
-        res: SetClasses.Response
+        self, req: SetClasses.Request, res: SetClasses.Response
     ) -> SetClasses.Response:
         self.get_logger().info(f"Setting classes: {req.classes}")
         self.yolo.set_classes(req.classes)
