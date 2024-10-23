@@ -26,7 +26,7 @@ $ colcon build
 Build the yolo_ros docker:
 
 ```shell
-$ docker build . yolo_ros
+$ docker build . -t yolo_ros
 ```
 
 Running the docker container:

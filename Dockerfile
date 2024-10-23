@@ -1,12 +1,12 @@
 ARG ROS_DISTRO=humble
-FROM ros:${ROS_DISTRO} as deps
+FROM ros:${ROS_DISTRO} AS deps
 
-# create ros2_ws and copy files
+# Create ros2_ws and copy files
 WORKDIR /root/ros2_ws
 SHELL ["/bin/bash", "-c"]
 COPY . /root/ros2_ws/src
 
-# install dependencies
+# Install dependencies
 RUN apt-get update \
     && apt-get -y --quiet --no-install-recommends install \
     gcc \
@@ -17,8 +17,8 @@ RUN pip3 install -r src/requirements.txt
 RUN rosdep install --from-paths src --ignore-src -r -y
 RUN pip3 install sphinx==8.0.0 sphinx-rtd-theme==3.0.0
 
-# colcon the ws
-FROM deps as builder
+# Colcon the ws
+FROM deps AS builder
 ARG CMAKE_BUILD_TYPE=Release
 RUN source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build
 
