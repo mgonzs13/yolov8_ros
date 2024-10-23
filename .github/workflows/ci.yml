@@ -10,9 +10,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: datadog/action-py-black-formatter@v2.1
+      - name: Black Formatter
+        uses: datadog/action-py-black-formatter@v2.1
         with:
           check_mode: "true"
+          print_diff_mode: "true"
 
   build:
     runs-on: ubuntu-latest
@@ -23,7 +25,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      - name: Build Docker
         uses: docker/build-push-action@v6
         with:
           push: false
