@@ -402,9 +402,7 @@ class Detect3DNode(LifecycleNode):
 
     @staticmethod
     def transform_3d_keypoints(
-        keypoints: KeyPoint3DArray,
-        translation: np.ndarray,
-        rotation: np.ndarray,
+        keypoints: KeyPoint3DArray, translation: np.ndarray, rotation: np.ndarray
     ) -> KeyPoint3DArray:
 
         for point in keypoints.data:

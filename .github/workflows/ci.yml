@@ -1,7 +1,6 @@
 name: Python CI with Docker and Formatting Check
 
-on:
-  push:
+on: [push, pull_request]
 
 jobs:
   formatter:
@@ -11,10 +10,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Black Formatter
-        uses: datadog/action-py-black-formatter@v2.1
+        uses: rickstaa/action-black@v1
         with:
-          check_mode: "true"
-          print_diff_mode: "true"
+          black_args: ". --check"
 
   build:
     runs-on: ubuntu-latest
