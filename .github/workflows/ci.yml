@@ -12,7 +12,7 @@ jobs:
       - name: Black Formatter
         uses: rickstaa/action-black@v1
         with:
-          black_args: ". --check"
+          black_args: ". --check --diff"
 
   build:
     runs-on: ubuntu-latest
