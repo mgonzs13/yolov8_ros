@@ -196,7 +196,11 @@ class YoloNode(LifecycleNode):
         self.get_logger().info(f"[{self.get_name()}] Shutted down")
         return TransitionCallbackReturn.SUCCESS
 
-    def enable_cb(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+    def enable_cb(
+        self,
+        request: SetBool.Request,
+        response: SetBool.Response
+    ) -> SetBool.Response:
         self.enable = request.data
         response.success = True
         return response
@@ -299,7 +303,8 @@ class YoloNode(LifecycleNode):
             if points.conf is None:
                 continue
 
-            for kp_id, (p, conf) in enumerate(zip(points.xy[0], points.conf[0])):
+            for kp_id, (p, conf) in enumerate(
+                    zip(points.xy[0], points.conf[0])):
 
                 if conf >= self.threshold:
                     msg = KeyPoint2D()

@@ -127,7 +127,12 @@ class DebugNode(LifecycleNode):
         self.get_logger().info(f"[{self.get_name()}] Shutted down")
         return TransitionCallbackReturn.SUCCESS
 
-    def draw_box(self, cv_image: np.ndarray, detection: Detection, color: Tuple[int]) -> np.ndarray:
+    def draw_box(
+        self,
+        cv_image: np.ndarray,
+        detection: Detection,
+        color: Tuple[int]
+    ) -> np.ndarray:
 
         # get detection info
         class_name = detection.class_name
@@ -176,7 +181,12 @@ class DebugNode(LifecycleNode):
 
         return cv_image
 
-    def draw_mask(self, cv_image: np.ndarray, detection: Detection, color: Tuple[int]) -> np.ndarray:
+    def draw_mask(
+        self,
+        cv_image: np.ndarray,
+        detection: Detection,
+        color: Tuple[int]
+    ) -> np.ndarray:
 
         mask_msg = detection.mask
         mask_array = np.array([[int(ele.x), int(ele.y)]
@@ -186,11 +196,21 @@ class DebugNode(LifecycleNode):
             layer = cv_image.copy()
             layer = cv2.fillPoly(layer, pts=[mask_array], color=color)
             cv2.addWeighted(cv_image, 0.4, layer, 0.6, 0, cv_image)
-            cv_image = cv2.polylines(cv_image, [mask_array], isClosed=True,
-                                     color=color, thickness=2, lineType=cv2.LINE_AA)
+            cv_image = cv2.polylines(
+                cv_image,
+                [mask_array],
+                isClosed=True,
+                color=color,
+                thickness=2,
+                lineType=cv2.LINE_AA
+            )
         return cv_image
 
-    def draw_keypoints(self, cv_image: np.ndarray, detection: Detection) -> np.ndarray:
+    def draw_keypoints(
+        self,
+        cv_image: np.ndarray,
+        detection: Detection
+    ) -> np.ndarray:
 
         keypoints_msg = detection.keypoints
 
@@ -218,12 +238,22 @@ class DebugNode(LifecycleNode):
             kp2_pos = get_pk_pose(sk[1])
 
             if kp1_pos is not None and kp2_pos is not None:
-                cv2.line(cv_image, kp1_pos, kp2_pos, [
-                    int(x) for x in ann.limb_color[i]], thickness=2, lineType=cv2.LINE_AA)
+                cv2.line(
+                    cv_image,
+                    kp1_pos,
+                    kp2_pos,
+                    [int(x) for x in ann.limb_color[i]],
+                    thickness=2,
+                    lineType=cv2.LINE_AA
+                )
 
         return cv_image
 
-    def create_bb_marker(self, detection: Detection, color: Tuple[int]) -> Marker:
+    def create_bb_marker(
+        self,
+        detection: Detection,
+        color: Tuple[int]
+    ) -> Marker:
 
         bbox3d = detection.bbox3d
 
@@ -288,7 +318,11 @@ class DebugNode(LifecycleNode):
 
         return marker
 
-    def detections_cb(self, img_msg: Image, detection_msg: DetectionArray) -> None:
+    def detections_cb(
+        self,
+        img_msg: Image,
+        detection_msg: DetectionArray
+    ) -> None:
 
         cv_image = self.cv_bridge.imgmsg_to_cv2(img_msg)
         bb_marker_array = MarkerArray()
@@ -327,8 +361,9 @@ class DebugNode(LifecycleNode):
                     kp_marker_array.markers.append(marker)
 
         # publish dbg image
-        self._dbg_pub.publish(self.cv_bridge.cv2_to_imgmsg(cv_image,
-                                                           encoding=img_msg.encoding))
+        self._dbg_pub.publish(
+            self.cv_bridge.cv2_to_imgmsg(
+                cv_image, encoding=img_msg.encoding))
         self._bb_markers_pub.publish(bb_marker_array)
         self._kp_markers_pub.publish(kp_marker_array)
 

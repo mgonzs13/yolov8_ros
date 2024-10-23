@@ -135,7 +135,11 @@ class TrackingNode(LifecycleNode):
         tracker = TRACKER_MAP[cfg.tracker_type](args=cfg, frame_rate=1)
         return tracker
 
-    def detections_cb(self, img_msg: Image, detections_msg: DetectionArray) -> None:
+    def detections_cb(
+        self,
+        img_msg: Image,
+        detections_msg: DetectionArray
+    ) -> None:
 
         tracked_detections_msg = DetectionArray()
         tracked_detections_msg.header = img_msg.header
@@ -148,16 +152,17 @@ class TrackingNode(LifecycleNode):
         detection: Detection
         for detection in detections_msg.detections:
 
-            detection_list.append(
-                [
-                    detection.bbox.center.position.x - detection.bbox.size.x / 2,
-                    detection.bbox.center.position.y - detection.bbox.size.y / 2,
-                    detection.bbox.center.position.x + detection.bbox.size.x / 2,
-                    detection.bbox.center.position.y + detection.bbox.size.y / 2,
-                    detection.score,
-                    detection.class_id
-                ]
-            )
+            detection_list.append([
+                detection.bbox.center.position.x -
+                detection.bbox.size.x /
+                2, detection.bbox.center.position.y -
+                detection.bbox.size.y /
+                2, detection.bbox.center.position.x +
+                detection.bbox.size.x /
+                2, detection.bbox.center.position.y +
+                detection.bbox.size.y /
+                2, detection.score, detection.class_id
+            ])
 
         # tracking
         if len(detection_list) > 0:
