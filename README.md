@@ -23,19 +23,13 @@ $ colcon build
 
 ## Docker
 
-Build the yolo_ros docker:
+Build the yolo_ros docker.
 
 ```shell
-$ docker build . -t yolo_ros
+$ docker build -t yolo_ros .
 ```
 
-Running the docker container:
-
-```shell
-$ docker run -it --rm yolo_ros
-```
-
-Running the docker with GPU support:
+Run the docker container. If you want to use CUDA, you have to install the [NVIDIA Container Tollkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) and add `--gpus all`.
 
 ```shell
 $ docker run -it --rm --gpus all yolo_ros
