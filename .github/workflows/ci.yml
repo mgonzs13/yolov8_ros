@@ -1,4 +1,4 @@
-name: Python CI with Docker and Formatting Check
+name: CI with Formatting Check and Docker
 
 on: [push, pull_request]
 
@@ -14,10 +14,10 @@ jobs:
         with:
           args: ". --check --diff"
 
-  build:
+  docker_build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
