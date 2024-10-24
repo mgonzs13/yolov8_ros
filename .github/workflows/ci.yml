@@ -3,7 +3,7 @@ name: Python CI with Docker and Formatting Check
 on: [push, pull_request]
 
 jobs:
-  formatter:
+  python_formatter:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
