@@ -1,4 +1,4 @@
-name: CI with Formatting Check and Docker
+name: CI with Formatting Check and Docker Build
 
 on: [push, pull_request]
 
