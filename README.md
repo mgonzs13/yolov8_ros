@@ -121,8 +121,8 @@ These are the parameters from the [yolo.launch.py](./yolo_bringup/launch/yolo.la
 - **device**: GPU/CUDA (default: cuda:0)
 - **enable**: whether to start YOLO enabled (default: True)
 - **threshold**: detection threshold (default: 0.5)
-- **iou**: intersection Over Union (IoU) threshold for Non-Maximum Suppression (NMS) (default: 0.5)
-- **imgsz_height**: image height for inference (default: 640)
+- **iou**: intersection Over Union (IoU) threshold for Non-Maximum Suppression (NMS) (default: 0.7)
+- **imgsz_height**: image height for inference (default: 480)
 - **imgsz_width**: image width for inference (default: 640)
 - **half**: whether to enable half-precision (FP16) inference speeding up model inference with minimal impact on accuracy (default: False)
 - **max_det**: maximum number of detections allowed per image (default: 300)
@@ -142,7 +142,7 @@ These are the parameters from the [yolo.launch.py](./yolo_bringup/launch/yolo.la
 - **use_3d**: whether to activate 3D detections (default: False)
 - **use_debug**: whether to activate debug node (default: True)
 
-## Lifecycle nodes
+## Lifecycle Nodes
 
 Previous updates add Lifecycle Nodes support to all the nodes available in the package.
 This implementation tries to reduce the workload in the unconfigured and inactive states by only loading the models and activating the subscriber on the active state.

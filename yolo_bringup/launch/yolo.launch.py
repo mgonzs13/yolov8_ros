@@ -73,7 +73,7 @@ def generate_launch_description():
         imgsz_height = LaunchConfiguration("imgsz_height")
         imgsz_height_cmd = DeclareLaunchArgument(
             "imgsz_height",
-            default_value="640",
+            default_value="480",
             description="Image height for inference",
         )
 
