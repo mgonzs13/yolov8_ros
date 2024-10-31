@@ -1,0 +1,29 @@
+name: CI with Formatting Check and Docker Build
+
+on: [push, pull_request]
+
+jobs:
+  python_formatter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Black Formatter
+        uses: lgeiger/black-action@master
+        with:
+          args: ". --check --diff"
+
+  docker_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker
+        uses: docker/build-push-action@v6
+        with:
+          push: false
