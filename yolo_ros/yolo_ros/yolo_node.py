@@ -127,8 +127,17 @@ class YoloNode(LifecycleNode):
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"[{self.get_name()}] Activating...")
 
-        self.yolo = self.type_to_model[self.model_type](self.model)
-        self.yolo.fuse()
+        try:
+            self.yolo = self.type_to_model[self.model_type](self.model)
+        except FileNotFoundError:
+            self.get_logger().error(f"Model file '{self.model}' does not exists")
+            return TransitionCallbackReturn.ERROR
+
+        try:
+            self.get_logger().info("Trying to fuse model...")
+            self.yolo.fuse()
+        except TypeError as e:
+            self.get_logger().warn(f"Error while fuse: {e}")
 
         self._enable_srv = self.create_service(SetBool, "enable", self.enable_cb)
 
