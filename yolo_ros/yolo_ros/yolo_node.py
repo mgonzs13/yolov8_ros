@@ -45,6 +45,7 @@ from yolo_msgs.msg import Detection
 from yolo_msgs.msg import DetectionArray
 from yolo_msgs.srv import SetClasses
 
+import cv2
 
 class YoloNode(LifecycleNode):
 
@@ -324,9 +325,15 @@ class YoloNode(LifecycleNode):
         if self.enable:
 
             # convert image + predict
-            cv_image = self.cv_bridge.imgmsg_to_cv2(msg)
+            cv_image_bgr = self.cv_bridge.imgmsg_to_cv2(msg)
+
+            print('change made')
+
+            # Convert from BGR to RGB
+            cv_image_rgb = cv2.cvtColor(cv_image_bgr, cv2.COLOR_BGR2RGB)
+
             results = self.yolo.predict(
-                source=cv_image,
+                source=cv_image_rgb,
                 verbose=False,
                 stream=False,
                 conf=self.threshold,
@@ -378,7 +385,8 @@ class YoloNode(LifecycleNode):
             self._pub.publish(detections_msg)
 
             del results
-            del cv_image
+            del cv_image_rgb
+            del cv_image_bgr
 
     def set_classes_cb(
         self, req: SetClasses.Request, res: SetClasses.Response
