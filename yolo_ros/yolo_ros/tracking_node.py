@@ -169,7 +169,6 @@ class TrackingNode(LifecycleNode):
         if len(detection_list) > 0:
 
             det = Boxes(np.array(detection_list), (img_msg.height, img_msg.width))
-
             tracks = self.tracker.update(det, cv_image)
 
             if len(tracks) > 0:
@@ -177,7 +176,6 @@ class TrackingNode(LifecycleNode):
                 for t in tracks:
 
                     tracked_box = Boxes(t[:-1], (img_msg.height, img_msg.width))
-
                     tracked_detection: Detection = detections_msg.detections[int(t[-1])]
 
                     # get boxes values

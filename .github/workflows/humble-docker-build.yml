@@ -1,0 +1,19 @@
+name: Humble Docker Build
+
+on: [push, pull_request]
+
+jobs:
+  humble_docker_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          build-args: ROS_DISTRO=humble
+          push: false

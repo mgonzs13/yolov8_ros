@@ -54,9 +54,7 @@ class Detect3DNode(LifecycleNode):
         self.declare_parameter(
             "depth_image_reliability", QoSReliabilityPolicy.BEST_EFFORT
         )
-        self.declare_parameter(
-            "depth_info_reliability", QoSReliabilityPolicy.BEST_EFFORT
-        )
+        self.declare_parameter("depth_info_reliability", QoSReliabilityPolicy.BEST_EFFORT)
 
         # aux
         self.tf_buffer = Buffer()
@@ -206,9 +204,7 @@ class Detect3DNode(LifecycleNode):
             if bbox3d is not None:
                 new_detections.append(detection)
 
-                bbox3d = Detect3DNode.transform_3d_box(
-                    bbox3d, transform[0], transform[1]
-                )
+                bbox3d = Detect3DNode.transform_3d_box(bbox3d, transform[0], transform[1])
                 bbox3d.frame_id = self.target_frame
                 new_detections[-1].bbox3d = bbox3d
 
@@ -262,8 +258,7 @@ class Detect3DNode(LifecycleNode):
 
         else:
             bb_center_z_coord = (
-                depth_image[int(center_y)][int(center_x)]
-                / self.depth_image_units_divisor
+                depth_image[int(center_y)][int(center_x)] / self.depth_image_units_divisor
             )
 
         z_diff = np.abs(roi - bb_center_z_coord)
