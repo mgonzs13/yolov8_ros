@@ -14,7 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+import cv2
 from typing import List, Dict
+from cv_bridge import CvBridge
 
 import rclpy
 from rclpy.qos import QoSProfile
@@ -24,8 +26,6 @@ from rclpy.qos import QoSReliabilityPolicy
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.lifecycle import LifecycleState
-
-from cv_bridge import CvBridge
 
 import torch
 from ultralytics import YOLO, NAS, YOLOWorld
@@ -325,6 +325,7 @@ class YoloNode(LifecycleNode):
 
             # convert image + predict
             cv_image = self.cv_bridge.imgmsg_to_cv2(msg)
+            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
             results = self.yolo.predict(
                 source=cv_image,
                 verbose=False,

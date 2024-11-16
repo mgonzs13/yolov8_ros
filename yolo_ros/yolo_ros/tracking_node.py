@@ -23,6 +23,7 @@ from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.lifecycle import LifecycleState
 
+import cv2
 import numpy as np
 import message_filters
 from cv_bridge import CvBridge
@@ -146,6 +147,7 @@ class TrackingNode(LifecycleNode):
 
         # convert image
         cv_image = self.cv_bridge.imgmsg_to_cv2(img_msg)
+        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
 
         # parse detections
         detection_list = []
